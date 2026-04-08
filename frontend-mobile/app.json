@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Plant Care DATN",
+    "slug": "plant-care-datn",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#F3F6EE"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.datn.plantcare"
+    },
+    "android": {
+      "package": "com.datn.plantcare"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

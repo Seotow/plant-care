@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# ML model weights (large files — use Git LFS or download separately)
+models/*.pt
+models/*.pth
+
+# SQLite local dev DB
+backend/plantcare.db
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Node
+frontend-mobile/node_modules/
+frontend-mobile/.expo/
+frontend-mobile/dist/
+frontend-mobile/web-build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*

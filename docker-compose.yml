@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: plantcare
+      POSTGRES_PASSWORD: plantcare
+      POSTGRES_DB: plantcare
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plantcare"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./models:/app/models:ro
+      - backend-uploads:/app/uploads
+    environment:
+      DATABASE_URL: postgresql://plantcare:plantcare@db:5432/plantcare
+      MODEL_DIR: /app/models
+      SECRET_KEY: plantcare-thesis-secret-key-2026
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend-mobile
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./frontend-mobile:/app
+      - /app/node_modules
+    environment:
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: "0.0.0.0"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  backend-uploads:

@@ -1,0 +1,69 @@
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
+from database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(128), nullable=False)
+    full_name = Column(String(100), default="")
+    phone = Column(String(20), default="")
+    location = Column(String(100), default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    gardens = relationship("Garden", back_populates="owner", cascade="all, delete-orphan")
+    detections = relationship("Detection", back_populates="user", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
+
+
+class Garden(Base):
+    __tablename__ = "gardens"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    crop_type = Column(String(100), default="")
+    area = Column(String(50), default="")
+    trees = Column(Integer, default=0)
+    health_score = Column(Integer, default=100)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    owner = relationship("User", back_populates="gardens")
+    detections = relationship("Detection", back_populates="garden", cascade="all, delete-orphan")
+    tasks = relationship("Task", back_populates="garden")
+
+
+class Detection(Base):
+    __tablename__ = "detections"
+    id = Column(Integer, primary_key=True, index=True)
+    garden_id = Column(Integer, ForeignKey("gardens.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    image_path = Column(String(255), default="")
+    disease_label = Column(String(100), default="")
+    disease_label_vi = Column(String(150), default="")
+    confidence = Column(Float, default=0.0)
+    bbox = Column(Text, default="[]")
+    top_k = Column(Text, default="[]")
+    center_x = Column(Float, default=0.0)
+    center_y = Column(Float, default=0.0)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    garden = relationship("Garden", back_populates="detections")
+    user = relationship("User", back_populates="detections")
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    due_time = Column(String(20), default="")
+    priority = Column(String(10), default="medium")
+    completed = Column(Integer, default=0)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    garden_id = Column(Integer, ForeignKey("gardens.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", back_populates="tasks")
+    garden = relationship("Garden", back_populates="tasks")
