@@ -9,7 +9,7 @@ from collections import Counter
 from pathlib import Path
 from PIL import Image
 from ultralytics import YOLO
-from transformers import SwinForImageClassification
+from transformers import SwinForImageClassification, SwinConfig
 from torchvision import transforms
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # plant-care/
@@ -81,16 +81,14 @@ class PlantDiseasePredictor:
         # Stage 2: Swin Transformer classifier
         ckpt = torch.load(swin_weights, map_location=self.device, weights_only=False)
         self.class_names = ckpt["class_names"]
-        model_ckpt = ckpt.get("model_ckpt", "microsoft/swin-small-patch4-window7-224")
         num_labels = ckpt.get("num_labels", len(self.class_names))
 
-        self.swin = SwinForImageClassification.from_pretrained(
-            model_ckpt,
-            num_labels=num_labels,
-            id2label={str(i): n for i, n in enumerate(self.class_names)},
-            label2id={n: i for i, n in enumerate(self.class_names)},
-            ignore_mismatched_sizes=True,
-        )
+        config = SwinConfig(**ckpt["swin_config"])
+        config.num_labels = num_labels
+        config.id2label = {str(i): n for i, n in enumerate(self.class_names)}
+        config.label2id = {n: i for i, n in enumerate(self.class_names)}
+
+        self.swin = SwinForImageClassification(config)
         self.swin.load_state_dict(ckpt["model_state"])
         self.swin.to(self.device).eval()
 
