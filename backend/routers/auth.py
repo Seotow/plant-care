@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
-from schemas import UserRegister, UserLogin, TokenResponse
-from auth import hash_password, verify_password, create_token
+from schemas import UserRegister, UserLogin, UserUpdate, TokenResponse
+from auth import hash_password, verify_password, create_token, get_current_user
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -39,3 +39,37 @@ def login(body: UserLogin, db: Session = Depends(get_db)):
         access_token=token,
         user={"id": user.id, "username": user.username, "full_name": user.full_name},
     )
+
+
+@router.get("/me")
+def get_me(user: User = Depends(get_current_user)):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "location": user.location,
+    }
+
+
+@router.put("/me")
+def update_profile(body: UserUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if body.new_password:
+        if not body.current_password or not verify_password(body.current_password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Mật khẩu hiện tại không đúng")
+        user.hashed_password = hash_password(body.new_password)
+    if body.full_name is not None:
+        user.full_name = body.full_name
+    if body.phone is not None:
+        user.phone = body.phone
+    if body.location is not None:
+        user.location = body.location
+    db.commit()
+    db.refresh(user)
+    return {
+        "id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "location": user.location,
+    }

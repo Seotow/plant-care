@@ -1,9 +1,9 @@
 import React from "react";
-import { StyleSheet, View, Alert } from "react-native";
+import { StyleSheet, View, Alert, Linking } from "react-native";
 import { Avatar, Button, Card, List, Text } from "react-native-paper";
 import { useAuth } from "../context/AuthContext";
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
@@ -28,9 +28,23 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={styles.card} mode="elevated">
-        <List.Item title="Thông tin tài khoản" left={(props) => <List.Icon {...props} icon="account" />} />
-        <List.Item title="Thông báo" left={(props) => <List.Icon {...props} icon="bell" />} />
-        <List.Item title="Trợ giúp" left={(props) => <List.Icon {...props} icon="help-circle" />} />
+        <List.Item
+          title="Thông tin tài khoản"
+          left={(props) => <List.Icon {...props} icon="account" />}
+          right={(props) => <List.Icon {...props} icon="chevron-right" />}
+          onPress={() => navigation.navigate("EditProfile")}
+        />
+        <List.Item
+          title="Quản lý công việc"
+          left={(props) => <List.Icon {...props} icon="format-list-checks" />}
+          right={(props) => <List.Icon {...props} icon="chevron-right" />}
+          onPress={() => navigation.navigate("Tasks")}
+        />
+        <List.Item
+          title="Trợ giúp"
+          left={(props) => <List.Icon {...props} icon="help-circle" />}
+          onPress={() => Linking.openURL("https://github.com/Seotow/plant-care")}
+        />
       </Card>
 
       <Button mode="outlined" onPress={handleLogout} style={styles.logoutBtn} textColor="#B3261E">

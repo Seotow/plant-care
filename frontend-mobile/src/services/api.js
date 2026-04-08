@@ -66,6 +66,17 @@ class ApiService {
     });
   }
 
+  getProfile() {
+    return this.request("/api/auth/me");
+  }
+
+  updateProfile(data) {
+    return this.request("/api/auth/me", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
   // ── Dashboard ──
   getDashboard() {
     return this.request("/api/dashboard/");

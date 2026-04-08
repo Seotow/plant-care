@@ -130,12 +130,11 @@ class PlantDiseasePredictor:
         return kept
 
     def _majority_vote_species(self, detections):
-        """Re-classify detections whose species differs from the majority.
+        """Enforce single plant species per image.
 
-        When most leaves are identified as e.g. Tomato, outliers that say Corn
-        are re-scored: the Swin top-k is checked for a label matching the
-        dominant species, and if found above a min threshold it replaces the
-        original prediction.
+        Determines the dominant species by counting detections, then either
+        re-classifies outliers (if their top-k contains a match for the
+        dominant species above min_confidence) or drops them entirely.
         """
         if len(detections) < 2:
             return detections
@@ -160,12 +159,12 @@ class PlantDiseasePredictor:
             if replacement:
                 det["label"] = replacement[0]
                 det["confidence"] = replacement[1]
-
-            corrected.append(det)
+                corrected.append(det)
+            # else: drop — species không khớp và top-k không có thay thế
 
         return corrected
 
-    def predict(self, img, conf: float = 0.25, top_k: int = 3) -> tuple[list[dict], dict]:
+    def predict(self, img, conf: float = 0.35, cls_conf: float = 0.15, top_k: int = 3) -> tuple[list[dict], dict]:
         if isinstance(img, (str, Path)):
             img_bgr = cv2.imread(str(img))
         else:
@@ -211,6 +210,9 @@ class PlantDiseasePredictor:
 
         detections = self._apply_nms(detections)
         detections = self._majority_vote_species(detections)
+
+        # Drop detections below classifier confidence threshold
+        detections = [d for d in detections if d["confidence"] >= cls_conf]
 
         for det in detections:
             bx1, by1, bx2, by2 = det["bbox"]

@@ -1,7 +1,10 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+load_dotenv(Path(__file__).parent / ".env")
 
 DB_PATH = Path(__file__).parent / "plantcare.db"
 DEFAULT_URL = f"sqlite:///{DB_PATH}"
