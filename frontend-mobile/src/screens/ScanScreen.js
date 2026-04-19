@@ -1,25 +1,56 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Image, Alert } from "react-native";
-import { Button, Card, Text, ActivityIndicator, Menu, Chip } from "react-native-paper";
+import { StyleSheet, View, Image, Alert, Pressable } from "react-native";
+import { Button, Text, ActivityIndicator, Menu } from "react-native-paper";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import * as ImagePicker from "expo-image-picker";
 import api from "../services/api";
+import ScreenWrapper from "../components/ScreenWrapper";
+import useResponsive from "../hooks/useResponsive";
+import { colors, shadows, spacing } from "../theme";
 
 function StepIndicator({ number, label, active, done }) {
-  const bg = done ? "#2F6E49" : active ? "#4A7C59" : "#D9E1D8";
-  const textColor = done || active ? "#fff" : "#666";
+  const bg = done ? colors.primary : active ? colors.primaryLight : colors.outlineVariant;
+  const textColor = done || active ? "#fff" : colors.textMuted;
   return (
-    <View style={styles.step}>
-      <View style={[styles.stepCircle, { backgroundColor: bg }]}>
-        <Text style={[styles.stepNumber, { color: textColor }]}>
-          {done ? "✓" : number}
-        </Text>
+    <View style={stepStyles.step}>
+      <View style={[stepStyles.circle, { backgroundColor: bg }]}>
+        {done ? (
+          <MaterialCommunityIcons name="check" size={16} color="#fff" />
+        ) : (
+          <Text style={[stepStyles.number, { color: textColor }]}>{number}</Text>
+        )}
       </View>
-      <Text variant="labelSmall" style={styles.stepLabel}>{label}</Text>
+      <Text variant="labelSmall" style={[stepStyles.label, (active || done) && stepStyles.labelActive]}>
+        {label}
+      </Text>
     </View>
   );
 }
 
+const stepStyles = StyleSheet.create({
+  step: { alignItems: "center" },
+  circle: {
+    width: 32, height: 32, borderRadius: 16,
+    justifyContent: "center", alignItems: "center",
+  },
+  number: { fontSize: 14, fontWeight: "700" },
+  label: { marginTop: 6, color: colors.textMuted, fontSize: 12 },
+  labelActive: { color: colors.text, fontWeight: "600" },
+});
+
+function StepConnector({ done }) {
+  return (
+    <View style={[connStyles.line, done && connStyles.lineDone]} />
+  );
+}
+
+const connStyles = StyleSheet.create({
+  line: { flex: 1, height: 2, backgroundColor: colors.outlineVariant, marginHorizontal: 8, marginTop: -14 },
+  lineDone: { backgroundColor: colors.primary },
+});
+
 export default function ScanScreen({ navigation, route }) {
+  const { isMobile } = useResponsive();
   const [gardens, setGardens] = useState([]);
   const [selectedGarden, setSelectedGarden] = useState(null);
   const [imageUri, setImageUri] = useState(null);
@@ -82,137 +113,181 @@ export default function ScanScreen({ navigation, route }) {
   const step2Done = !!imageUri;
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper>
       <View style={styles.stepRow}>
         <StepIndicator number={1} label="Chọn vườn" active={!step1Done} done={step1Done} />
-        <View style={styles.stepLine} />
+        <StepConnector done={step1Done} />
         <StepIndicator number={2} label="Chọn ảnh" active={step1Done && !step2Done} done={step2Done} />
-        <View style={styles.stepLine} />
+        <StepConnector done={step2Done} />
         <StepIndicator number={3} label="Phân tích" active={step1Done && step2Done} done={false} />
       </View>
 
-      <Card style={styles.card} mode="elevated">
-        <Card.Content>
-          <Text variant="labelLarge" style={styles.label}>
-            Vườn cây:
-          </Text>
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <Button mode="outlined" onPress={() => setMenuVisible(true)} style={styles.picker}>
-                {selectedGarden ? selectedGarden.name : "Chọn vườn..."}
-              </Button>
-            }
-          >
-            {gardens.map((g) => (
-              <Menu.Item
-                key={g.id}
-                title={`${g.name} — ${g.crop_type}`}
-                onPress={() => {
-                  setSelectedGarden(g);
-                  setMenuVisible(false);
-                }}
-              />
-            ))}
-          </Menu>
-
-          {imageUri ? (
-            <View style={styles.previewWrap}>
-              <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
-              <Chip
-                icon="close"
-                compact
-                onPress={() => setImageUri(null)}
-                style={styles.removeChip}
-              >
-                Xóa ảnh
-              </Chip>
-            </View>
-          ) : (
-            <View style={styles.placeholder}>
-              <Text variant="bodyLarge" style={styles.placeholderText}>
-                Chụp ảnh lá cây để bắt đầu
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.buttons}>
-            <Button mode="contained" icon="camera" onPress={() => pickImage(true)} style={styles.btn}>
-              Chụp ảnh
-            </Button>
-            <Button mode="outlined" icon="image" onPress={() => pickImage(false)} style={styles.btn}>
-              Thư viện
-            </Button>
-          </View>
-
-          {step1Done && step2Done && (
-            <Button
-              mode="contained"
-              onPress={handleScan}
-              loading={loading}
-              disabled={loading}
-              style={styles.scanBtn}
-              icon="magnify"
+      <View style={[styles.card, !isMobile && styles.cardWeb]}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          <MaterialCommunityIcons name="sprout" size={18} color={colors.primary} /> Vườn cây
+        </Text>
+        <Menu
+          visible={menuVisible}
+          onDismiss={() => setMenuVisible(false)}
+          anchor={
+            <Pressable
+              onPress={() => setMenuVisible(true)}
+              style={[styles.gardenPicker, selectedGarden && styles.gardenPickerSelected]}
             >
-              {loading ? "Đang phân tích..." : "Nhận diện bệnh"}
-            </Button>
-          )}
-        </Card.Content>
-      </Card>
-    </View>
+              <MaterialCommunityIcons
+                name={selectedGarden ? "check-circle" : "chevron-down"}
+                size={20}
+                color={selectedGarden ? colors.primary : colors.textMuted}
+              />
+              <Text
+                variant="bodyLarge"
+                style={[styles.gardenPickerText, selectedGarden && styles.gardenPickerTextSelected]}
+              >
+                {selectedGarden ? selectedGarden.name : "Chọn vườn..."}
+              </Text>
+            </Pressable>
+          }
+        >
+          {gardens.map((g) => (
+            <Menu.Item
+              key={g.id}
+              title={`${g.name} — ${g.crop_type}`}
+              leadingIcon="sprout"
+              onPress={() => { setSelectedGarden(g); setMenuVisible(false); }}
+            />
+          ))}
+        </Menu>
+
+        {imageUri ? (
+          <View style={styles.previewWrap}>
+            <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="cover" />
+            <Pressable onPress={() => setImageUri(null)} style={styles.removeBtn}>
+              <MaterialCommunityIcons name="close-circle" size={28} color="#fff" />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable style={styles.placeholder} onPress={() => pickImage(false)}>
+            <View style={styles.placeholderIconWrap}>
+              <MaterialCommunityIcons name="image-plus" size={40} color={colors.primaryLight} />
+            </View>
+            <Text variant="bodyLarge" style={styles.placeholderTitle}>Chụp ảnh lá cây</Text>
+            <Text variant="bodySmall" style={styles.placeholderSub}>Nhấn để chọn từ thư viện</Text>
+          </Pressable>
+        )}
+
+        <View style={styles.buttons}>
+          <Button
+            mode="contained"
+            icon="camera"
+            onPress={() => pickImage(true)}
+            style={styles.btn}
+            contentStyle={styles.btnContent}
+          >
+            Chụp ảnh
+          </Button>
+          <Button
+            mode="outlined"
+            icon="image"
+            onPress={() => pickImage(false)}
+            style={styles.btn}
+            contentStyle={styles.btnContent}
+          >
+            Thư viện
+          </Button>
+        </View>
+
+        {step1Done && step2Done && (
+          <Button
+            mode="contained"
+            onPress={handleScan}
+            loading={loading}
+            disabled={loading}
+            style={styles.scanBtn}
+            contentStyle={styles.scanBtnContent}
+            icon="magnify"
+            labelStyle={styles.scanBtnLabel}
+          >
+            {loading ? "Đang phân tích..." : "Nhận diện bệnh"}
+          </Button>
+        )}
+      </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F6EE", padding: 14 },
   stepRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
-    marginBottom: 14,
-    paddingHorizontal: 10,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
-  step: { alignItems: "center" },
-  stepCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: "center",
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: spacing.lg,
+    ...shadows.medium,
+  },
+  cardWeb: {
+    maxWidth: 560,
+    alignSelf: "center",
+    width: "100%",
+  },
+  sectionTitle: { fontWeight: "700", color: colors.text, marginBottom: 12 },
+  gardenPicker: {
+    flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.outline,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: spacing.md,
+    backgroundColor: colors.background,
   },
-  stepNumber: { fontSize: 13, fontWeight: "700" },
-  stepLabel: { marginTop: 4, opacity: 0.7 },
-  stepLine: { flex: 1, height: 2, backgroundColor: "#D9E1D8", marginHorizontal: 6 },
-  card: { borderRadius: 14 },
-  label: { marginBottom: 6 },
-  picker: { marginBottom: 12 },
-  previewWrap: { position: "relative", marginBottom: 12 },
+  gardenPickerSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySurface,
+  },
+  gardenPickerText: { marginLeft: 10, color: colors.textMuted, flex: 1 },
+  gardenPickerTextSelected: { color: colors.primary, fontWeight: "600" },
+  previewWrap: { position: "relative", marginBottom: spacing.md, borderRadius: 16, overflow: "hidden" },
   preview: {
     width: "100%",
-    height: 220,
-    borderRadius: 10,
-    backgroundColor: "#E8EFE3",
+    height: 260,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceVariant,
   },
-  removeChip: {
+  removeBtn: {
     position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "#fff",
+    top: 10,
+    right: 10,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 16,
+    padding: 2,
   },
   placeholder: {
-    width: "100%",
-    height: 160,
-    borderRadius: 10,
+    height: 200,
+    borderRadius: 16,
     borderWidth: 2,
+    borderColor: colors.outlineVariant,
     borderStyle: "dashed",
-    borderColor: "#B8C5B0",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing.md,
+    backgroundColor: colors.background,
   },
-  placeholderText: { opacity: 0.5 },
-  buttons: { flexDirection: "row", gap: 10, marginBottom: 12 },
-  btn: { flex: 1 },
-  scanBtn: { marginTop: 4 },
+  placeholderIconWrap: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primarySurface,
+    alignItems: "center", justifyContent: "center", marginBottom: 12,
+  },
+  placeholderTitle: { fontWeight: "600", color: colors.text },
+  placeholderSub: { color: colors.textMuted, marginTop: 4 },
+  buttons: { flexDirection: "row", gap: 12, marginBottom: spacing.sm },
+  btn: { flex: 1, borderRadius: 12 },
+  btnContent: { paddingVertical: 4 },
+  scanBtn: { marginTop: spacing.sm, borderRadius: 14 },
+  scanBtnContent: { paddingVertical: 8 },
+  scanBtnLabel: { fontSize: 16, fontWeight: "700" },
 });

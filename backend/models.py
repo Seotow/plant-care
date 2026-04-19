@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, LargeBinary
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from database import Base
@@ -67,3 +67,38 @@ class Task(Base):
 
     user = relationship("User", back_populates="tasks")
     garden = relationship("Garden", back_populates="tasks")
+
+
+class DiseaseClass(Base):
+    __tablename__ = "disease_classes"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False)
+    name_vi = Column(String(150), default="")
+    is_builtin = Column(Integer, default=0)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    prototype = relationship("DiseasePrototype", back_populates="disease_class", uselist=False)
+    samples = relationship("DiseaseSample", back_populates="disease_class")
+
+
+class DiseasePrototype(Base):
+    __tablename__ = "disease_prototypes"
+    id = Column(Integer, primary_key=True, index=True)
+    disease_class_id = Column(Integer, ForeignKey("disease_classes.id"), unique=True, nullable=False)
+    embedding = Column(LargeBinary, nullable=False)
+    sample_count = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    disease_class = relationship("DiseaseClass", back_populates="prototype")
+
+
+class DiseaseSample(Base):
+    __tablename__ = "disease_samples"
+    id = Column(Integer, primary_key=True, index=True)
+    disease_class_id = Column(Integer, ForeignKey("disease_classes.id"), nullable=False)
+    image_path = Column(String(255), nullable=False)
+    embedding = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    disease_class = relationship("DiseaseClass", back_populates="samples")

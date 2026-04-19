@@ -3,7 +3,6 @@ import { FlatList, StyleSheet, View, Alert } from "react-native";
 import {
   ActivityIndicator,
   Button,
-  Card,
   Chip,
   Dialog,
   FAB,
@@ -13,71 +12,77 @@ import {
   Text,
   TextInput,
 } from "react-native-paper";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
+import useResponsive from "../hooks/useResponsive";
+import { colors, shadows, spacing } from "../theme";
 
 const PRIORITY_OPTIONS = [
-  { value: "high", label: "Cao", color: "#B3261E" },
-  { value: "medium", label: "Vừa", color: "#F9A825" },
-  { value: "low", label: "Thấp", color: "#2F6E49" },
+  { value: "high", label: "Cao", color: colors.error },
+  { value: "medium", label: "Vừa", color: colors.warning },
+  { value: "low", label: "Thấp", color: colors.success },
 ];
 
 function priorityColor(p) {
-  return PRIORITY_OPTIONS.find((o) => o.value === p)?.color || "#999";
+  return PRIORITY_OPTIONS.find((o) => o.value === p)?.color || colors.textMuted;
 }
 
 function TaskCard({ task, onToggle, onDelete }) {
   const done = !!task.completed;
-  const color = done ? "#999" : priorityColor(task.priority);
+  const pColor = done ? colors.textMuted : priorityColor(task.priority);
+  const pBg = pColor + "15";
 
   return (
-    <Card
-      style={[styles.card, { borderLeftWidth: 3, borderLeftColor: color, opacity: done ? 0.6 : 1 }]}
-      mode="elevated"
-    >
-      <Card.Content style={styles.cardContent}>
-        <View style={styles.cardLeft}>
-          <Text
-            variant="titleMedium"
-            style={[styles.taskTitle, done && styles.taskDone]}
-          >
+    <View style={[tcStyles.card, done && tcStyles.cardDone]}>
+      <View style={[tcStyles.indicator, { backgroundColor: pColor }]} />
+      <View style={tcStyles.content}>
+        <View style={tcStyles.topRow}>
+          <Text variant="titleMedium" style={[tcStyles.title, done && tcStyles.titleDone]} numberOfLines={2}>
             {task.title}
           </Text>
-          <View style={styles.metaRow}>
-            {task.due_time ? (
-              <Text variant="bodySmall" style={styles.dueTime}>
-                {task.due_time}
-              </Text>
-            ) : null}
-            <Chip
-              compact
-              style={{ backgroundColor: color + "18" }}
-              textStyle={{ color, fontSize: 11, fontWeight: "600" }}
-            >
-              {PRIORITY_OPTIONS.find((o) => o.value === task.priority)?.label || task.priority}
-            </Chip>
+          <Chip compact style={{ backgroundColor: pBg }} textStyle={{ color: pColor, fontSize: 11, fontWeight: "700" }}>
+            {PRIORITY_OPTIONS.find((o) => o.value === task.priority)?.label || task.priority}
+          </Chip>
+        </View>
+        {task.due_time ? (
+          <View style={tcStyles.timeRow}>
+            <MaterialCommunityIcons name="clock-outline" size={14} color={colors.textMuted} />
+            <Text variant="bodySmall" style={tcStyles.time}>{task.due_time}</Text>
           </View>
-        </View>
-        <View style={styles.cardActions}>
-          <IconButton
-            icon={done ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
-            iconColor={done ? "#2F6E49" : "#999"}
-            size={24}
-            onPress={() => onToggle(task.id)}
-          />
-          <IconButton
-            icon="delete-outline"
-            iconColor="#B3261E"
-            size={22}
-            onPress={() => onDelete(task.id)}
-          />
-        </View>
-      </Card.Content>
-    </Card>
+        ) : null}
+      </View>
+      <View style={tcStyles.actions}>
+        <IconButton
+          icon={done ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
+          iconColor={done ? colors.success : colors.textMuted}
+          size={26}
+          onPress={() => onToggle(task.id)}
+        />
+        <IconButton icon="delete-outline" iconColor={colors.error} size={22} onPress={() => onDelete(task.id)} />
+      </View>
+    </View>
   );
 }
 
+const tcStyles = StyleSheet.create({
+  card: {
+    flexDirection: "row", backgroundColor: colors.surface, borderRadius: 16,
+    marginBottom: 10, overflow: "hidden", ...shadows.small,
+  },
+  cardDone: { opacity: 0.6 },
+  indicator: { width: 4 },
+  content: { flex: 1, padding: 14 },
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+  title: { fontWeight: "600", color: colors.text, flex: 1, marginRight: 8 },
+  titleDone: { textDecorationLine: "line-through", color: colors.textMuted },
+  timeRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
+  time: { color: colors.textMuted },
+  actions: { flexDirection: "column", justifyContent: "center", paddingRight: 4 },
+});
+
 export default function TaskScreen() {
+  const { isMobile } = useResponsive();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -88,35 +93,19 @@ export default function TaskScreen() {
 
   const fetchTasks = useCallback(() => {
     setLoading(true);
-    api
-      .getTasks()
-      .then(setTasks)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    api.getTasks().then(setTasks).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   useFocusEffect(fetchTasks);
 
   const handleToggle = async (id) => {
-    try {
-      await api.toggleTask(id);
-      fetchTasks();
-    } catch {}
+    try { await api.toggleTask(id); fetchTasks(); } catch {}
   };
 
   const handleDelete = (id) => {
     Alert.alert("Xóa công việc", "Bạn có chắc muốn xóa?", [
       { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.deleteTask(id);
-            fetchTasks();
-          } catch {}
-        },
-      },
+      { text: "Xóa", style: "destructive", onPress: async () => { try { await api.deleteTask(id); fetchTasks(); } catch {} } },
     ]);
   };
 
@@ -125,10 +114,7 @@ export default function TaskScreen() {
     setSaving(true);
     try {
       await api.createTask({ title: title.trim(), due_time: dueTime.trim(), priority });
-      setTitle("");
-      setDueTime("");
-      setPriority("medium");
-      setDialogOpen(false);
+      setTitle(""); setDueTime(""); setPriority("medium"); setDialogOpen(false);
       fetchTasks();
     } catch {}
     setSaving(false);
@@ -137,7 +123,7 @@ export default function TaskScreen() {
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -148,60 +134,38 @@ export default function TaskScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, !isMobile && styles.listWeb]}
         data={[...pending, ...completed]}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <TaskCard task={item} onToggle={handleToggle} onDelete={handleDelete} />
         )}
         ListEmptyComponent={
-          <Text variant="bodyLarge" style={styles.empty}>
-            Chưa có công việc nào
-          </Text>
+          <View style={styles.emptyWrap}>
+            <MaterialCommunityIcons name="clipboard-check-outline" size={48} color={colors.textMuted} />
+            <Text variant="bodyLarge" style={styles.emptyText}>Chưa có công việc nào</Text>
+          </View>
         }
-        ListHeaderComponent={
-          pending.length > 0 && completed.length > 0 ? null : undefined
-        }
-        stickyHeaderIndices={[]}
       />
 
-      <FAB icon="plus" style={styles.fab} onPress={() => setDialogOpen(true)} />
+      <FAB icon="plus" style={styles.fab} color={colors.onPrimary} onPress={() => setDialogOpen(true)} />
 
       <Portal>
-        <Dialog visible={dialogOpen} onDismiss={() => setDialogOpen(false)}>
+        <Dialog visible={dialogOpen} onDismiss={() => setDialogOpen(false)} style={styles.dialog}>
           <Dialog.Title>Thêm công việc</Dialog.Title>
           <Dialog.Content>
-            <TextInput
-              label="Tên công việc *"
-              value={title}
-              onChangeText={setTitle}
-              mode="outlined"
-              style={styles.input}
-            />
-            <TextInput
-              label="Thời gian (VD: 08:00)"
-              value={dueTime}
-              onChangeText={setDueTime}
-              mode="outlined"
-              style={styles.input}
-            />
-            <Text variant="labelLarge" style={styles.prioLabel}>
-              Ưu tiên
-            </Text>
+            <TextInput label="Tên công việc *" value={title} onChangeText={setTitle} mode="outlined" style={styles.input} outlineStyle={styles.inputOutline} />
+            <TextInput label="Thời gian (VD: 08:00)" value={dueTime} onChangeText={setDueTime} mode="outlined" style={styles.input} outlineStyle={styles.inputOutline} />
+            <Text variant="labelLarge" style={styles.prioLabel}>Ưu tiên</Text>
             <RadioButton.Group onValueChange={setPriority} value={priority}>
               {PRIORITY_OPTIONS.map((opt) => (
-                <RadioButton.Item
-                  key={opt.value}
-                  label={opt.label}
-                  value={opt.value}
-                  labelStyle={{ color: opt.color }}
-                />
+                <RadioButton.Item key={opt.value} label={opt.label} value={opt.value} labelStyle={{ color: opt.color, fontWeight: "600" }} />
               ))}
             </RadioButton.Group>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDialogOpen(false)}>Hủy</Button>
-            <Button onPress={handleCreate} loading={saving} disabled={!title.trim()}>
+            <Button onPress={handleCreate} loading={saving} disabled={!title.trim()} mode="contained" style={styles.createBtn}>
               Tạo
             </Button>
           </Dialog.Actions>
@@ -212,19 +176,16 @@ export default function TaskScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F6EE" },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  list: { padding: 14, paddingBottom: 80 },
-  card: { borderRadius: 14, marginBottom: 10 },
-  cardContent: { flexDirection: "row", alignItems: "center" },
-  cardLeft: { flex: 1 },
-  taskTitle: { fontWeight: "700", marginBottom: 4 },
-  taskDone: { textDecorationLine: "line-through", color: "#999" },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  dueTime: { opacity: 0.6 },
-  cardActions: { flexDirection: "row" },
-  empty: { textAlign: "center", opacity: 0.5, marginTop: 40 },
-  fab: { position: "absolute", right: 16, bottom: 16, backgroundColor: "#2F6E49" },
-  input: { marginBottom: 10 },
-  prioLabel: { marginTop: 4, marginBottom: 2 },
+  container: { flex: 1, backgroundColor: colors.background },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
+  list: { padding: spacing.md, paddingBottom: 80 },
+  listWeb: { maxWidth: 600, alignSelf: "center", width: "100%" },
+  emptyWrap: { alignItems: "center", marginTop: 60, gap: 8 },
+  emptyText: { color: colors.textMuted },
+  fab: { position: "absolute", right: 16, bottom: 16, backgroundColor: colors.primary, borderRadius: 16 },
+  dialog: { borderRadius: 20 },
+  input: { marginBottom: 12, backgroundColor: colors.surface },
+  inputOutline: { borderRadius: 12 },
+  prioLabel: { marginTop: 4, marginBottom: 2, color: colors.text },
+  createBtn: { borderRadius: 10 },
 });

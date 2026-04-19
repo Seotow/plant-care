@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:latest-alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: plantcare
       POSTGRES_PASSWORD: plantcare

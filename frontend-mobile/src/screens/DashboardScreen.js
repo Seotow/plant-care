@@ -1,11 +1,87 @@
 import React, { useCallback, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
 import { useFocusEffect } from "@react-navigation/native";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import SectionCard from "../components/SectionCard";
 import StatCard from "../components/StatCard";
 import TaskItem from "../components/TaskItem";
+import ScreenWrapper from "../components/ScreenWrapper";
 import api from "../services/api";
+import { colors, shadows, spacing } from "../theme";
+
+function WelcomeBanner({ name, location }) {
+  return (
+    <View style={bannerStyles.container}>
+      <View style={bannerStyles.textWrap}>
+        <Text variant="headlineSmall" style={bannerStyles.greeting}>
+          Xin chào, {name} 👋
+        </Text>
+        <Text variant="bodyMedium" style={bannerStyles.location}>
+          {location} • Dữ liệu hôm nay
+        </Text>
+      </View>
+      <View style={bannerStyles.iconWrap}>
+        <MaterialCommunityIcons name="leaf" size={36} color={colors.primary} />
+      </View>
+    </View>
+  );
+}
+
+const bannerStyles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: spacing.md,
+    ...shadows.medium,
+  },
+  textWrap: { flex: 1 },
+  greeting: { fontWeight: "800", color: colors.text },
+  location: { color: colors.textSecondary, marginTop: 4 },
+  iconWrap: {
+    width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primarySurface,
+    alignItems: "center", justifyContent: "center", marginLeft: 12,
+  },
+});
+
+function DetectionItem({ item }) {
+  const label = item.disease_vi || item.disease.replace(/___/g, " — ").replace(/_/g, " ");
+  const healthy = item.disease.toLowerCase().includes("healthy") || (item.disease_vi || "").includes("Khỏe mạnh");
+  const color = healthy ? colors.success : colors.error;
+
+  return (
+    <View style={detStyles.item}>
+      <View style={[detStyles.dot, { backgroundColor: color }]} />
+      <View style={detStyles.info}>
+        <Text variant="bodyLarge" style={[detStyles.label, { color }]}>{label}</Text>
+        <Text variant="bodySmall" style={detStyles.meta}>
+          {item.garden} • Tin cậy {(item.confidence * 100).toFixed(0)}%
+        </Text>
+      </View>
+      <Text variant="labelSmall" style={detStyles.date}>
+        {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+      </Text>
+    </View>
+  );
+}
+
+const detStyles = StyleSheet.create({
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.outlineVariant,
+  },
+  dot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
+  info: { flex: 1 },
+  label: { fontWeight: "600" },
+  meta: { color: colors.textSecondary, marginTop: 2 },
+  date: { color: colors.textMuted },
+});
 
 export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
@@ -25,87 +101,47 @@ export default function DashboardScreen() {
   if (loading || !data) {
     return (
       <View style={styles.loaderWrap}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text variant="headlineSmall" style={styles.headline}>
-        Xin chào, {data.profile.name}
-      </Text>
-      <Text variant="bodyMedium" style={styles.subline}>
-        {data.profile.location} • Dữ liệu hôm nay
-      </Text>
+    <ScreenWrapper>
+      <WelcomeBanner name={data.profile.name} location={data.profile.location} />
 
       <View style={styles.statsRow}>
-        <StatCard title="Vườn" value={data.summary.totalGardens} tone="neutral" />
-        <StatCard title="Số cây" value={data.summary.totalTrees} tone="good" />
+        <StatCard title="Vườn" value={data.summary.totalGardens} tone="neutral" icon="sprout" />
+        <StatCard title="Số cây" value={data.summary.totalTrees} tone="good" icon="tree" />
       </View>
       <View style={styles.statsRow}>
-        <StatCard title="Sức khỏe" value={`${data.summary.healthScore}%`} tone="good" />
-        <StatCard title="Cảnh báo" value={data.summary.todayAlerts} tone="warn" />
+        <StatCard title="Sức khỏe" value={`${data.summary.healthScore}%`} tone="good" icon="heart-pulse" />
+        <StatCard title="Cảnh báo" value={data.summary.todayAlerts} tone="warn" icon="bell-ring-outline" />
       </View>
 
-      <SectionCard title="Việc cần làm">
+      <SectionCard title="Việc cần làm" icon="format-list-checks">
         {data.tasks.length === 0 && (
-          <Text variant="bodyMedium" style={styles.emptyText}>
-            Không có việc cần làm
-          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>Không có việc cần làm</Text>
         )}
         {data.tasks.map((task) => (
           <TaskItem key={task.id} task={task} />
         ))}
       </SectionCard>
 
-      <SectionCard title="Nhận diện gần đây">
+      <SectionCard title="Nhận diện gần đây" icon="magnify-scan">
         {data.recentDetections.length === 0 && (
-          <Text variant="bodyMedium" style={styles.emptyText}>
-            Chưa có kết quả nhận diện
-          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>Chưa có kết quả nhận diện</Text>
         )}
-        {data.recentDetections.map((item) => {
-          const label = item.disease_vi || item.disease.replace(/___/g, " — ").replace(/_/g, " ");
-          const healthy = item.disease.toLowerCase().includes("healthy") || (item.disease_vi || "").includes("Khỏe mạnh");
-          const color = healthy ? "#2F6E49" : "#B3261E";
-          return (
-            <View key={item.id} style={styles.historyItem}>
-              <View style={styles.historyHeader}>
-                <View style={[styles.historyDot, { backgroundColor: color }]} />
-                <Text variant="bodyLarge" style={[styles.historyTitle, { color }]}>
-                  {label}
-                </Text>
-              </View>
-              <Text variant="bodySmall">
-                {item.garden} • Tin cậy {(item.confidence * 100).toFixed(0)}%
-              </Text>
-              <Text variant="bodySmall" style={styles.historyDate}>
-                {new Date(item.createdAt).toLocaleString("vi-VN")}
-              </Text>
-            </View>
-          );
-        })}
+        {data.recentDetections.map((item) => (
+          <DetectionItem key={item.id} item={item} />
+        ))}
       </SectionCard>
-    </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F6EE" },
-  content: { padding: 15, paddingBottom: 30 },
-  loaderWrap: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headline: { fontWeight: "700" },
-  subline: { marginTop: 2, marginBottom: 10, opacity: 0.75 },
-  statsRow: { flexDirection: "row", marginHorizontal: -6 },
-  emptyText: { opacity: 0.5, fontStyle: "italic" },
-  historyItem: {
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D9E1D8",
-  },
-  historyHeader: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
-  historyDot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
-  historyTitle: { fontWeight: "600", flex: 1 },
-  historyDate: { marginTop: 2, opacity: 0.55 },
+  loaderWrap: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
+  statsRow: { flexDirection: "row", marginHorizontal: -6, marginBottom: 2 },
+  emptyText: { color: colors.textMuted, fontStyle: "italic", paddingVertical: 8 },
 });

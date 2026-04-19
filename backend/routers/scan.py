@@ -49,9 +49,19 @@ async def scan_image(
     save_path = UPLOAD_DIR / filename
     cv2.imwrite(str(save_path), img_bgr)
 
-    # Run inference
+    # Run inference with Grad-CAM
     predictor = request.app.state.predictor
-    results, analysis = predictor.predict(img_bgr)
+    results, analysis = predictor.predict(img_bgr, gradcam=True)
+
+    # Save Grad-CAM heatmaps
+    heatmap_dir = UPLOAD_DIR / "heatmaps"
+    heatmap_dir.mkdir(exist_ok=True)
+    for det in results:
+        overlay = det.pop("gradcam_overlay", None)
+        if overlay is not None:
+            hm_name = f"{uuid.uuid4().hex}.jpg"
+            cv2.imwrite(str(heatmap_dir / hm_name), overlay)
+            det["heatmap_url"] = f"/uploads/heatmaps/{hm_name}"
 
     # Save detections to DB
     saved = []
@@ -83,6 +93,7 @@ async def scan_image(
             "top_k": det["top_k"],
             "center_x": det["center"][0],
             "center_y": det["center"][1],
+            "heatmap_url": det.get("heatmap_url"),
             "created_at": record.created_at.isoformat(),
         })
 

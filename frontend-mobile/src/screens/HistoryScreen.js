@@ -1,8 +1,11 @@
 import React, { useCallback, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { ActivityIndicator, Card, Chip, Text } from "react-native-paper";
+import { ActivityIndicator, Chip, Text } from "react-native-paper";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
+import useResponsive from "../hooks/useResponsive";
+import { colors, shadows, spacing } from "../theme";
 
 function formatLabel(label) {
   return label.replace(/___/g, " — ").replace(/_/g, " ");
@@ -15,57 +18,75 @@ function isHealthy(label) {
 function HistoryCard({ item }) {
   const label = item.disease_label_vi || formatLabel(item.disease_label);
   const healthy = isHealthy(item.disease_label || item.disease_label_vi || "");
-  const color = healthy ? "#2F6E49" : "#B3261E";
+  const statusColor = healthy ? colors.success : colors.error;
+  const statusBg = healthy ? colors.successLight : colors.errorLight;
+
   return (
-    <Card style={[styles.card, { borderLeftWidth: 3, borderLeftColor: color }]} mode="elevated">
-      <Card.Content>
-        <View style={styles.headerRow}>
-          <Text variant="titleMedium" style={[styles.title, { color }]}>
+    <View style={hStyles.card}>
+      <View style={[hStyles.indicator, { backgroundColor: statusColor }]} />
+      <View style={hStyles.content}>
+        <View style={hStyles.headerRow}>
+          <Text variant="titleMedium" style={[hStyles.title, { color: statusColor }]} numberOfLines={1}>
             {label}
           </Text>
           <Chip
             compact
-            style={{ backgroundColor: color + "18" }}
-            textStyle={{ color, fontSize: 11, fontWeight: "600" }}
+            style={[hStyles.chip, { backgroundColor: statusBg }]}
+            textStyle={{ color: statusColor, fontSize: 11, fontWeight: "700" }}
           >
             {healthy ? "Khỏe" : "Bệnh"}
           </Chip>
         </View>
-        <Text variant="bodyMedium" style={styles.meta}>
-          Vườn: {item.garden_name}
-        </Text>
-        <View style={styles.footerRow}>
-          <Text variant="bodySmall" style={styles.conf}>
+        <View style={hStyles.metaRow}>
+          <MaterialCommunityIcons name="sprout" size={14} color={colors.textMuted} />
+          <Text variant="bodySmall" style={hStyles.meta}>{item.garden_name}</Text>
+        </View>
+        <View style={hStyles.footerRow}>
+          <Text variant="labelSmall" style={hStyles.conf}>
             Tin cậy: {(item.confidence * 100).toFixed(1)}%
           </Text>
-          <Text variant="bodySmall" style={styles.date}>
-            {new Date(item.created_at).toLocaleString("vi-VN")}
+          <Text variant="labelSmall" style={hStyles.date}>
+            {new Date(item.created_at).toLocaleDateString("vi-VN")}
           </Text>
         </View>
-      </Card.Content>
-    </Card>
+      </View>
+    </View>
   );
 }
 
+const hStyles = StyleSheet.create({
+  card: {
+    flexDirection: "row", backgroundColor: colors.surface, borderRadius: 16,
+    marginBottom: 12, overflow: "hidden", ...shadows.small,
+  },
+  indicator: { width: 4 },
+  content: { flex: 1, padding: 14 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  title: { fontWeight: "700", flex: 1, marginRight: 8 },
+  chip: { height: 26 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  meta: { color: colors.textSecondary },
+  footerRow: { flexDirection: "row", justifyContent: "space-between" },
+  conf: { fontWeight: "600", color: colors.textSecondary },
+  date: { color: colors.textMuted },
+});
+
 export default function HistoryScreen() {
+  const { isMobile } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [detections, setDetections] = useState([]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      api
-        .getDetections()
-        .then(setDetections)
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      api.getDetections().then(setDetections).catch(() => {}).finally(() => setLoading(false));
     }, [])
   );
 
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -73,38 +94,25 @@ export default function HistoryScreen() {
   return (
     <FlatList
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, !isMobile && styles.contentWeb]}
       data={detections}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <HistoryCard item={item} />}
       ListEmptyComponent={
-        <Text variant="bodyLarge" style={styles.empty}>
-          Chưa có kết quả nhận diện nào
-        </Text>
+        <View style={styles.emptyWrap}>
+          <MaterialCommunityIcons name="clipboard-text-clock-outline" size={48} color={colors.textMuted} />
+          <Text variant="bodyLarge" style={styles.emptyText}>Chưa có kết quả nhận diện nào</Text>
+        </View>
       }
     />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F6EE" },
-  content: { padding: 14 },
-  card: { borderRadius: 14, marginBottom: 12 },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  title: { fontWeight: "700", flex: 1, marginRight: 8 },
-  meta: { opacity: 0.7, marginBottom: 6 },
-  footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  conf: { fontWeight: "600" },
-  date: { opacity: 0.55 },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  empty: { textAlign: "center", marginTop: 40, opacity: 0.6 },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: spacing.md },
+  contentWeb: { maxWidth: 700, alignSelf: "center", width: "100%" },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
+  emptyWrap: { alignItems: "center", marginTop: 60, gap: 8 },
+  emptyText: { color: colors.textMuted },
 });

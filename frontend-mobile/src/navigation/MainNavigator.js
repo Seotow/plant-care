@@ -1,11 +1,14 @@
-import React from "react";
+import React, { useRef } from "react";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { ActivityIndicator, Platform, View } from "react-native";
+import { ActivityIndicator, Platform, View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
+import useResponsive from "../hooks/useResponsive";
+import WebSidebar, { SIDEBAR_WIDTH } from "../components/WebSidebar";
+import { colors } from "../theme";
 
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
@@ -30,10 +33,11 @@ const navTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: "#F3F6EE",
-    primary: "#2F6E49",
-    card: "#FFFFFF",
-    text: "#1C2A20"
+    background: colors.background,
+    primary: colors.primary,
+    card: colors.surface,
+    text: colors.text,
+    border: colors.outlineVariant,
   }
 };
 
@@ -79,28 +83,44 @@ function iconByRoute(routeName, focused) {
   if (routeName === "Dashboard") return focused ? "view-dashboard" : "view-dashboard-outline";
   if (routeName === "Gardens") return focused ? "sprout" : "sprout-outline";
   if (routeName === "Scan") return focused ? "camera" : "camera-outline";
-  if (routeName === "History") return focused ? "history" : "history";
+  if (routeName === "History") return focused ? "clock" : "clock-outline";
   return focused ? "account" : "account-outline";
 }
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { showSidebar } = useResponsive();
   const bottomPadding = Platform.OS === "ios" ? Math.max(insets.bottom, 8) + 4 : 6;
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: route.name === "Dashboard" || route.name === "History",
-        tabBarActiveTintColor: "#2F6E49",
-        tabBarInactiveTintColor: "#607267",
-        tabBarStyle: {
-          height: 56 + bottomPadding,
-          paddingBottom: bottomPadding,
-          paddingTop: 6,
+        headerShown: showSidebar
+          ? false
+          : route.name === "Dashboard" || route.name === "History",
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarStyle: showSidebar
+          ? { display: "none" }
+          : {
+              height: 60 + bottomPadding,
+              paddingBottom: bottomPadding,
+              paddingTop: 8,
+              borderTopWidth: 0,
+              elevation: 12,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 8,
+            },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+          marginTop: 2,
         },
         tabBarHideOnKeyboard: true,
         tabBarIcon: ({ focused, color, size }) => (
-          <MaterialCommunityIcons name={iconByRoute(route.name, focused)} size={size} color={color} />
+          <MaterialCommunityIcons name={iconByRoute(route.name, focused)} size={24} color={color} />
         )
       })}
     >
@@ -115,18 +135,56 @@ function MainTabs() {
 
 export default function MainNavigator() {
   const { token, loading } = useAuth();
+  const { showSidebar } = useResponsive();
+  const navRef = useRef(null);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F3F6EE" }}>
-        <ActivityIndicator size="large" color="#2F6E49" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
+    );
+  }
+
+  if (!token) {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <AuthNavigator />
+      </NavigationContainer>
+    );
+  }
+
+  if (showSidebar) {
+    return (
+      <NavigationContainer theme={navTheme} ref={navRef}>
+        <View style={webStyles.root}>
+          <WebSidebar
+            activeRoute={navRef.current?.getCurrentRoute?.()?.name}
+            onNavigate={(route) => {
+              navRef.current?.navigate(route);
+            }}
+          />
+          <View style={webStyles.content}>
+            <MainTabs />
+          </View>
+        </View>
+      </NavigationContainer>
     );
   }
 
   return (
     <NavigationContainer theme={navTheme}>
-      {token ? <MainTabs /> : <AuthNavigator />}
+      <MainTabs />
     </NavigationContainer>
   );
 }
+
+const webStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  content: {
+    flex: 1,
+  },
+});

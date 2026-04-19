@@ -22,6 +22,7 @@ from routers.scan import router as scan_router
 from routers.history import router as history_router
 from routers.dashboard import router as dashboard_router
 from routers.tasks import router as tasks_router
+from routers.diseases import router as diseases_router
 
 UPLOAD_DIR = Path(__file__).parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -33,6 +34,13 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     print("Đang tải model AI...")
     app.state.predictor = PlantDiseasePredictor()
+    # Load custom disease prototypes from DB
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        app.state.predictor.reload_prototypes(db)
+    finally:
+        db.close()
     print("Server sẵn sàng!")
     yield
 
@@ -61,6 +69,7 @@ app.include_router(scan_router)
 app.include_router(history_router)
 app.include_router(dashboard_router)
 app.include_router(tasks_router)
+app.include_router(diseases_router)
 
 
 @app.get("/")
