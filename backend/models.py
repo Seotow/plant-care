@@ -69,6 +69,16 @@ class Task(Base):
     garden = relationship("Garden", back_populates="tasks")
 
 
+class DiseaseKnowledge(Base):
+    """Cơ sở tri thức bệnh cây — lưu trong DB, thay thế disease_knowledge.py."""
+    __tablename__ = "disease_knowledge"
+    id = Column(Integer, primary_key=True, index=True)
+    label = Column(String(150), unique=True, nullable=False, index=True)
+    mo_ta = Column(Text, default="")
+    nguyen_nhan = Column(Text, default="")
+    xu_ly = Column(Text, default="[]")  # JSON array stored as text
+
+
 class DiseaseClass(Base):
     __tablename__ = "disease_classes"
     id = Column(Integer, primary_key=True, index=True)
@@ -78,8 +88,8 @@ class DiseaseClass(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    prototype = relationship("DiseasePrototype", back_populates="disease_class", uselist=False)
-    samples = relationship("DiseaseSample", back_populates="disease_class")
+    prototype = relationship("DiseasePrototype", back_populates="disease_class", uselist=False, cascade="all, delete-orphan")
+    samples = relationship("DiseaseSample", back_populates="disease_class", cascade="all, delete-orphan")
 
 
 class DiseasePrototype(Base):
