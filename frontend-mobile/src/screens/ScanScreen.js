@@ -50,10 +50,11 @@ const connStyles = StyleSheet.create({
 });
 
 export default function ScanScreen({ navigation, route }) {
-  const { isMobile } = useResponsive();
+  const { isMobile, width: screenW } = useResponsive();
   const [gardens, setGardens] = useState([]);
   const [selectedGarden, setSelectedGarden] = useState(null);
   const [imageUri, setImageUri] = useState(null);
+  const [imageSize, setImageSize] = useState(null);
   const [loading, setLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -85,7 +86,9 @@ export default function ScanScreen({ navigation, route }) {
       result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
     }
     if (!result.canceled && result.assets?.[0]) {
-      setImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      setImageSize(asset.width && asset.height ? { w: asset.width, h: asset.height } : null);
     }
   };
 
@@ -108,6 +111,11 @@ export default function ScanScreen({ navigation, route }) {
       setLoading(false);
     }
   };
+
+  const previewContentWidth = Math.min(screenW - 64, 520);
+  const previewHeight = imageSize
+    ? Math.min(Math.round((imageSize.h / imageSize.w) * previewContentWidth), 320)
+    : 260;
 
   const step1Done = !!selectedGarden;
   const step2Done = !!imageUri;
@@ -159,8 +167,8 @@ export default function ScanScreen({ navigation, route }) {
         </Menu>
 
         {imageUri ? (
-          <View style={styles.previewWrap}>
-            <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="cover" />
+          <View style={[styles.previewWrap, { height: previewHeight }]}>
+            <Image source={{ uri: imageUri }} style={styles.preview} resizeMode="contain" />
             <Pressable onPress={() => setImageUri(null)} style={styles.removeBtn}>
               <MaterialCommunityIcons name="close-circle" size={28} color="#fff" />
             </Pressable>
@@ -252,10 +260,10 @@ const styles = StyleSheet.create({
   },
   gardenPickerText: { marginLeft: 10, color: colors.textMuted, flex: 1 },
   gardenPickerTextSelected: { color: colors.primary, fontWeight: "600" },
-  previewWrap: { position: "relative", marginBottom: spacing.md, borderRadius: 16, overflow: "hidden" },
+  previewWrap: { position: "relative", marginBottom: spacing.md, borderRadius: 16, overflow: "hidden", height: 260 },
   preview: {
     width: "100%",
-    height: 260,
+    height: "100%",
     borderRadius: 16,
     backgroundColor: colors.surfaceVariant,
   },
