@@ -8,13 +8,23 @@ __pycache__/
 # ML model weights (large files — use Git LFS or download separately)
 models/*.pt
 models/*.pth
+models/*.npz
 
 # SQLite local dev DB
 backend/plantcare.db
 
-# Uploads
+# Uploads — keep directory structure, exclude images
 backend/uploads/*
 !backend/uploads/.gitkeep
+!backend/uploads/heatmaps/
+!backend/uploads/diseases/
+!backend/uploads/test_crops/
+backend/uploads/heatmaps/*
+backend/uploads/diseases/*
+backend/uploads/test_crops/*
+!backend/uploads/heatmaps/.gitkeep
+!backend/uploads/diseases/.gitkeep
+!backend/uploads/test_crops/.gitkeep
 
 # Node
 frontend-mobile/node_modules/
@@ -33,3 +43,6 @@ Thumbs.db
 # Environment
 .env
 .env.*
+
+# Utility scripts (not part of app)
+scripts/
