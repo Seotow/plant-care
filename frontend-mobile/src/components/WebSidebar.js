@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { key: "Gardens", icon: "sprout-outline", iconActive: "sprout", label: "Vườn" },
   { key: "Scan", icon: "camera-outline", iconActive: "camera", label: "Quét bệnh" },
   { key: "History", icon: "clock-outline", iconActive: "clock", label: "Lịch sử" },
+  { key: "Diseases", icon: "virus-outline", iconActive: "virus", label: "Bệnh cây" },
   { key: "Profile", icon: "account-outline", iconActive: "account", label: "Cá nhân" },
 ];
 

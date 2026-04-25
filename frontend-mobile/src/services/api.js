@@ -167,6 +167,76 @@ class ApiService {
     return this.request(`/api/tasks/${id}`, { method: "DELETE" });
   }
 
+  // ── Diseases ──
+  getDiseases() {
+    return this.request("/api/diseases/");
+  }
+
+  async createDisease(name, nameVi, imageUris) {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("name_vi", nameVi);
+
+    for (let i = 0; i < imageUris.length; i++) {
+      const uri = imageUris[i];
+      if (Platform.OS === "web") {
+        const resp = await fetch(uri);
+        const blob = await resp.blob();
+        formData.append("files", blob, `sample_${i}.jpg`);
+      } else {
+        const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+        const mime = ext === "png" ? "image/png" : "image/jpeg";
+        formData.append("files", { uri, type: mime, name: `sample_${i}.${ext}` });
+      }
+    }
+
+    return this.request("/api/diseases/", { method: "POST", body: formData });
+  }
+
+  async addDiseaseSamples(diseaseId, imageUris) {
+    const formData = new FormData();
+    for (let i = 0; i < imageUris.length; i++) {
+      const uri = imageUris[i];
+      if (Platform.OS === "web") {
+        const resp = await fetch(uri);
+        const blob = await resp.blob();
+        formData.append("files", blob, `sample_${i}.jpg`);
+      } else {
+        const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+        const mime = ext === "png" ? "image/png" : "image/jpeg";
+        formData.append("files", { uri, type: mime, name: `sample_${i}.${ext}` });
+      }
+    }
+    return this.request(`/api/diseases/${diseaseId}/samples`, { method: "POST", body: formData });
+  }
+
+  deleteDisease(id) {
+    return this.request(`/api/diseases/${id}`, { method: "DELETE" });
+  }
+
+  updateDisease(id, name, nameVi) {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("name_vi", nameVi);
+    return this.request(`/api/diseases/${id}`, { method: "PATCH", body: formData });
+  }
+
+  // ── Test Grad-CAM ──
+  async testGradcam(imageUri, mode = "classifier") {
+    const formData = new FormData();
+    if (Platform.OS === "web") {
+      const resp = await fetch(imageUri);
+      const blob = await resp.blob();
+      formData.append("file", blob, "test.jpg");
+    } else {
+      const ext = imageUri.split(".").pop()?.toLowerCase() || "jpg";
+      const mime = ext === "png" ? "image/png" : "image/jpeg";
+      formData.append("file", { uri: imageUri, type: mime, name: `test.${ext}` });
+    }
+    formData.append("mode", mode);
+    return this.request("/api/scan/test-gradcam", { method: "POST", body: formData });
+  }
+
   // ── Utils ──
   getImageUrl(path) {
     return `${this.baseUrl}${path}`;

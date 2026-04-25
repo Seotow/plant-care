@@ -22,6 +22,8 @@ import HistoryScreen from "../screens/HistoryScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import TaskScreen from "../screens/TaskScreen";
+import DiseaseScreen from "../screens/DiseaseScreen";
+import GradcamTestScreen from "../screens/GradcamTestScreen";
 
 const AuthStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -75,6 +77,8 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: "Cá nhân" }} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: "Chỉnh sửa hồ sơ" }} />
       <ProfileStack.Screen name="Tasks" component={TaskScreen} options={{ title: "Công việc" }} />
+      <ProfileStack.Screen name="Diseases" component={DiseaseScreen} options={{ title: "Quản lý bệnh" }} />
+      <ProfileStack.Screen name="GradcamTest" component={GradcamTestScreen} options={{ title: "Test Grad-CAM" }} />
     </ProfileStack.Navigator>
   );
 }
@@ -84,6 +88,7 @@ function iconByRoute(routeName, focused) {
   if (routeName === "Gardens") return focused ? "sprout" : "sprout-outline";
   if (routeName === "Scan") return focused ? "camera" : "camera-outline";
   if (routeName === "History") return focused ? "clock" : "clock-outline";
+  if (routeName === "Diseases") return focused ? "virus" : "virus-outline";
   return focused ? "account" : "account-outline";
 }
 
@@ -128,6 +133,15 @@ function MainTabs() {
       <Tab.Screen name="Gardens" component={GardenStackScreen} options={{ headerShown: false, title: "Vườn" }} />
       <Tab.Screen name="Scan" component={ScanStackScreen} options={{ headerShown: false, title: "Quét" }} />
       <Tab.Screen name="History" component={HistoryScreen} options={{ title: "Lịch sử" }} />
+      <Tab.Screen
+        name="Diseases"
+        component={DiseaseScreen}
+        options={{
+          title: "Bệnh cây",
+          tabBarButton: showSidebar ? undefined : () => null,
+          tabBarItemStyle: showSidebar ? {} : { display: "none", width: 0 },
+        }}
+      />
       <Tab.Screen name="Profile" component={ProfileStackScreen} options={{ headerShown: false, title: "Cá nhân" }} />
     </Tab.Navigator>
   );

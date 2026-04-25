@@ -74,6 +74,18 @@ export default function ProfileScreen({ navigation }) {
           onPress={() => navigation.navigate("Tasks")}
         />
         <MenuItem
+          icon="virus-outline"
+          title="Quản lý bệnh cây"
+          onPress={() => navigation.navigate("Diseases")}
+          color={colors.secondary}
+        />
+        <MenuItem
+          icon="test-tube"
+          title="Test Grad-CAM"
+          onPress={() => navigation.navigate("GradcamTest")}
+          color="#FF6F00"
+        />
+        <MenuItem
           icon="help-circle-outline"
           title="Trợ giúp"
           onPress={() => Linking.openURL("https://github.com/Seotow/plant-care")}
