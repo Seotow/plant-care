@@ -194,9 +194,43 @@ async def add_samples(
     }
 
 
+@router.patch("/{disease_id}")
+def update_disease(
+    disease_id: int,
+    request: Request,
+    name: str = Form(...),
+    name_vi: str = Form(""),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    disease = db.query(DiseaseClass).filter(DiseaseClass.id == disease_id).first()
+    if not disease:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bệnh")
+    if disease.is_builtin:
+        raise HTTPException(status_code=403, detail="Không thể chỉnh sửa bệnh mặc định")
+
+    conflict = (
+        db.query(DiseaseClass)
+        .filter(DiseaseClass.name == name, DiseaseClass.id != disease_id)
+        .first()
+    )
+    if conflict:
+        raise HTTPException(status_code=409, detail=f"Tên '{name}' đã được dùng bởi bệnh khác")
+
+    disease.name = name
+    disease.name_vi = name_vi or name
+    db.commit()
+
+    predictor = request.app.state.predictor
+    predictor.reload_prototypes(db)
+
+    return {"id": disease.id, "name": disease.name, "name_vi": disease.name_vi}
+
+
 @router.delete("/{disease_id}")
 def delete_disease(
     disease_id: int,
+    request: Request,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -206,6 +240,21 @@ def delete_disease(
     if disease.is_builtin:
         raise HTTPException(status_code=403, detail="Không thể xóa bệnh mặc định")
 
+    name = disease.name
+    image_paths = [s.image_path for s in disease.samples]
+
     db.delete(disease)
     db.commit()
-    return {"message": f"Đã xóa bệnh '{disease.name}'"}
+
+    uploads_root = UPLOAD_DIR.parent
+    for rel_path in image_paths:
+        file_path = uploads_root / rel_path
+        try:
+            file_path.unlink(missing_ok=True)
+        except Exception:
+            logger.warning("Không thể xóa file ảnh: %s", rel_path)
+
+    predictor = request.app.state.predictor
+    predictor.reload_prototypes(db)
+
+    return {"message": f"Đã xóa bệnh '{name}'"}
