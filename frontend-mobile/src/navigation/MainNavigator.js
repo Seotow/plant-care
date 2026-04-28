@@ -24,12 +24,18 @@ import EditProfileScreen from "../screens/EditProfileScreen";
 import TaskScreen from "../screens/TaskScreen";
 import DiseaseScreen from "../screens/DiseaseScreen";
 import GradcamTestScreen from "../screens/GradcamTestScreen";
+import DiseaseSubmitScreen from "../screens/DiseaseSubmitScreen";
+import AdminSubmissionsScreen from "../screens/AdminSubmissionsScreen";
+import AdminKnowledgeScreen from "../screens/AdminKnowledgeScreen";
+import AdminKnowledgeEditScreen from "../screens/AdminKnowledgeEditScreen";
+import DetectionDetailScreen from "../screens/DetectionDetailScreen";
 
 const AuthStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const GardenStack = createNativeStackNavigator();
 const ScanStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const HistoryStack = createNativeStackNavigator();
 
 const navTheme = {
   ...DefaultTheme,
@@ -71,6 +77,15 @@ function ScanStackScreen() {
   );
 }
 
+function HistoryStackScreen() {
+  return (
+    <HistoryStack.Navigator>
+      <HistoryStack.Screen name="HistoryMain" component={HistoryScreen} options={{ title: "Lịch sử" }} />
+      <HistoryStack.Screen name="DetectionDetail" component={DetectionDetailScreen} options={{ title: "Chi tiết kết quả" }} />
+    </HistoryStack.Navigator>
+  );
+}
+
 function ProfileStackScreen() {
   return (
     <ProfileStack.Navigator>
@@ -78,6 +93,10 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: "Chỉnh sửa hồ sơ" }} />
       <ProfileStack.Screen name="Tasks" component={TaskScreen} options={{ title: "Công việc" }} />
       <ProfileStack.Screen name="Diseases" component={DiseaseScreen} options={{ title: "Quản lý bệnh" }} />
+      <ProfileStack.Screen name="DiseaseSubmit" component={DiseaseSubmitScreen} options={{ title: "Đề xuất bệnh mới" }} />
+      <ProfileStack.Screen name="AdminSubmissions" component={AdminSubmissionsScreen} options={{ title: "Quản lý đề xuất" }} />
+      <ProfileStack.Screen name="AdminKnowledge" component={AdminKnowledgeScreen} options={{ title: "Knowledge Base" }} />
+      <ProfileStack.Screen name="AdminKnowledgeEdit" component={AdminKnowledgeEditScreen} options={{ title: "Chỉnh sửa bệnh" }} />
       <ProfileStack.Screen name="GradcamTest" component={GradcamTestScreen} options={{ title: "Test Grad-CAM" }} />
     </ProfileStack.Navigator>
   );
@@ -102,7 +121,7 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: showSidebar
           ? false
-          : route.name === "Dashboard" || route.name === "History",
+          : route.name === "Dashboard",
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: showSidebar
@@ -132,7 +151,7 @@ function MainTabs() {
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: "Tổng quan" }} />
       <Tab.Screen name="Gardens" component={GardenStackScreen} options={{ headerShown: false, title: "Vườn" }} />
       <Tab.Screen name="Scan" component={ScanStackScreen} options={{ headerShown: false, title: "Quét" }} />
-      <Tab.Screen name="History" component={HistoryScreen} options={{ title: "Lịch sử" }} />
+      <Tab.Screen name="History" component={HistoryStackScreen} options={{ headerShown: false, title: "Lịch sử" }} />
       <Tab.Screen
         name="Diseases"
         component={DiseaseScreen}
