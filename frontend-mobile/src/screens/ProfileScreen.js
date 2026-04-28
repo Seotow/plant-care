@@ -35,6 +35,7 @@ const menuStyles = StyleSheet.create({
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
+  const isAdmin = Boolean(user?.is_admin);
   const { isMobile } = useResponsive();
 
   const handleLogout = () => {
@@ -91,6 +92,22 @@ export default function ProfileScreen({ navigation }) {
           onPress={() => Linking.openURL("https://github.com/Seotow/plant-care")}
           color={colors.secondary}
         />
+        {isAdmin && (
+          <MenuItem
+            icon="shield-check-outline"
+            title="Quản lý đề xuất bệnh"
+            onPress={() => navigation.navigate("AdminSubmissions")}
+            color={colors.error}
+          />
+        )}
+        {isAdmin && (
+          <MenuItem
+            icon="book-edit-outline"
+            title="Chỉnh sửa knowledge base"
+            onPress={() => navigation.navigate("AdminKnowledge")}
+            color={colors.primary}
+          />
+        )}
       </View>
 
       <View style={!isMobile ? { maxWidth: 480, alignSelf: "center", width: "100%" } : undefined}>
