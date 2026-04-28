@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from "react";
-import { FlatList, StyleSheet, View, Alert } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { FlatList, Platform, StyleSheet, View, Alert } from "react-native";
 import {
   ActivityIndicator,
   Button,
@@ -13,10 +13,54 @@ import {
   TextInput,
 } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
 import useResponsive from "../hooks/useResponsive";
 import { colors, shadows, spacing } from "../theme";
+
+// Lazy-load expo-notifications (not available on web)
+let Notifications = null;
+try {
+  if (Platform.OS !== "web") {
+    Notifications = require("expo-notifications");
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+  }
+} catch (_) {}
+
+async function scheduleTaskNotification(taskId, title, dueTime) {
+  if (!Notifications || Platform.OS === "web") return;
+  try {
+    // dueTime format: "HH:MM"
+    const [hour, minute] = dueTime.split(":").map(Number);
+    if (isNaN(hour) || isNaN(minute)) return;
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Nhắc nhở công việc",
+        body: title,
+        sound: true,
+      },
+      trigger: { hour, minute, repeats: true },
+    });
+    await AsyncStorage.setItem(`task_notif_${taskId}`, id);
+  } catch (_) {}
+}
+
+async function cancelTaskNotification(taskId) {
+  if (!Notifications || Platform.OS === "web") return;
+  try {
+    const id = await AsyncStorage.getItem(`task_notif_${taskId}`);
+    if (id) {
+      await Notifications.cancelScheduledNotificationAsync(id);
+      await AsyncStorage.removeItem(`task_notif_${taskId}`);
+    }
+  } catch (_) {}
 
 const PRIORITY_OPTIONS = [
   { value: "high", label: "Cao", color: colors.error },
@@ -98,14 +142,37 @@ export default function TaskScreen() {
 
   useFocusEffect(fetchTasks);
 
-  const handleToggle = async (id) => {
-    try { await api.toggleTask(id); fetchTasks(); } catch {}
+  // Request notification permissions once on mount
+  useEffect(() => {
+    if (Notifications && Platform.OS !== "web") {
+      Notifications.requestPermissionsAsync().catch(() => {});
+    }
+  }, []);
+
+  const handleToggle = async (id, task) => {
+    try {
+      await api.toggleTask(id);
+      if (!task.completed) {
+        // marking as done → cancel notification
+        cancelTaskNotification(id);
+      }
+      fetchTasks();
+    } catch {}
   };
 
   const handleDelete = (id) => {
     Alert.alert("Xóa công việc", "Bạn có chắc muốn xóa?", [
       { text: "Hủy", style: "cancel" },
-      { text: "Xóa", style: "destructive", onPress: async () => { try { await api.deleteTask(id); fetchTasks(); } catch {} } },
+      {
+        text: "Xóa", style: "destructive",
+        onPress: async () => {
+          try {
+            cancelTaskNotification(id);
+            await api.deleteTask(id);
+            fetchTasks();
+          } catch {}
+        },
+      },
     ]);
   };
 
@@ -113,7 +180,10 @@ export default function TaskScreen() {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      await api.createTask({ title: title.trim(), due_time: dueTime.trim(), priority });
+      const task = await api.createTask({ title: title.trim(), due_time: dueTime.trim(), priority });
+      if (dueTime.trim() && task?.id) {
+        await scheduleTaskNotification(task.id, title.trim(), dueTime.trim());
+      }
       setTitle(""); setDueTime(""); setPriority("medium"); setDialogOpen(false);
       fetchTasks();
     } catch {}
@@ -138,7 +208,11 @@ export default function TaskScreen() {
         data={[...pending, ...completed]}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <TaskCard task={item} onToggle={handleToggle} onDelete={handleDelete} />
+          <TaskCard
+            task={item}
+            onToggle={(id) => handleToggle(id, item)}
+            onDelete={handleDelete}
+          />
         )}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
