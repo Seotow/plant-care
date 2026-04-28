@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Chip, Text } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -15,14 +15,17 @@ function isHealthy(label) {
   return label.toLowerCase().includes("healthy") || label.includes("Khỏe mạnh");
 }
 
-function HistoryCard({ item }) {
+function HistoryCard({ item, onPress }) {
   const label = item.disease_label_vi || formatLabel(item.disease_label);
   const healthy = isHealthy(item.disease_label || item.disease_label_vi || "");
   const statusColor = healthy ? colors.success : colors.error;
   const statusBg = healthy ? colors.successLight : colors.errorLight;
 
   return (
-    <View style={hStyles.card}>
+    <Pressable
+      style={({ pressed }) => [hStyles.card, pressed && { opacity: 0.75 }]}
+      onPress={onPress}
+    >
       <View style={[hStyles.indicator, { backgroundColor: statusColor }]} />
       <View style={hStyles.content}>
         <View style={hStyles.headerRow}>
@@ -50,7 +53,7 @@ function HistoryCard({ item }) {
           </Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -71,7 +74,7 @@ const hStyles = StyleSheet.create({
   date: { color: colors.textMuted },
 });
 
-export default function HistoryScreen() {
+export default function HistoryScreen({ navigation }) {
   const { isMobile } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [detections, setDetections] = useState([]);
@@ -97,7 +100,12 @@ export default function HistoryScreen() {
       contentContainerStyle={[styles.content, !isMobile && styles.contentWeb]}
       data={detections}
       keyExtractor={(item) => String(item.id)}
-      renderItem={({ item }) => <HistoryCard item={item} />}
+      renderItem={({ item }) => (
+        <HistoryCard
+          item={item}
+          onPress={() => navigation.navigate("DetectionDetail", { detectionId: item.id })}
+        />
+      )}
       ListEmptyComponent={
         <View style={styles.emptyWrap}>
           <MaterialCommunityIcons name="clipboard-text-clock-outline" size={48} color={colors.textMuted} />
