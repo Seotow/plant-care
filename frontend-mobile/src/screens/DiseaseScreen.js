@@ -16,9 +16,10 @@ import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
 import useResponsive from "../hooks/useResponsive";
+import { useAuth } from "../context/AuthContext";
 import { colors, shadows, spacing } from "../theme";
 
-function DiseaseCard({ disease, onDelete, onAddSamples, onEdit }) {
+function DiseaseCard({ disease, isAdmin, onDelete, onAddSamples, onEdit }) {
   const isCustom = !disease.is_builtin;
 
   return (
@@ -39,7 +40,7 @@ function DiseaseCard({ disease, onDelete, onAddSamples, onEdit }) {
             {disease.sample_count} ảnh mẫu {isCustom ? "• Tùy chỉnh" : "• Có sẵn"}
           </Text>
         </View>
-        {isCustom && (
+        {isCustom && isAdmin && (
           <View style={dcStyles.actions}>
             <IconButton
               icon="image-plus"
@@ -91,10 +92,13 @@ const dcStyles = StyleSheet.create({
   actions: { flexDirection: "row" },
 });
 
-export default function DiseaseScreen() {
+export default function DiseaseScreen({ navigation }) {
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.is_admin);
   const { isMobile } = useResponsive();
   const [loading, setLoading] = useState(true);
   const [diseases, setDiseases] = useState([]);
+  const [mySubmissions, setMySubmissions] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [plantName, setPlantName] = useState("");
   const [plantNameVi, setPlantNameVi] = useState("");
@@ -125,12 +129,13 @@ export default function DiseaseScreen() {
 
   const fetchDiseases = useCallback(() => {
     setLoading(true);
-    api
-      .getDiseases()
-      .then(setDiseases)
+    const tasks = [api.getDiseases()];
+    if (!isAdmin) tasks.push(api.getMySubmissions().catch(() => []));
+    Promise.all(tasks)
+      .then(([d, s]) => { setDiseases(d); if (s) setMySubmissions(s); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAdmin]);
 
   useFocusEffect(fetchDiseases);
 
@@ -270,18 +275,44 @@ export default function DiseaseScreen() {
         renderItem={({ item }) => (
           <DiseaseCard
             disease={item}
+            isAdmin={isAdmin}
             onDelete={handleDelete}
             onAddSamples={handleAddSamples}
             onEdit={handleEdit}
           />
         )}
         ListHeaderComponent={
-          <View style={styles.headerRow}>
-            <MaterialCommunityIcons name="virus-outline" size={22} color={colors.primary} />
-            <Text variant="titleMedium" style={styles.headerTitle}>
-              Bệnh cây ({diseases.length})
-            </Text>
-          </View>
+          <>
+            <View style={styles.headerRow}>
+              <MaterialCommunityIcons name="virus-outline" size={22} color={colors.primary} />
+              <Text variant="titleMedium" style={styles.headerTitle}>
+                Bệnh cây ({diseases.length})
+              </Text>
+            </View>
+            {!isAdmin && mySubmissions.length > 0 && (
+              <View style={{ marginBottom: spacing.md }}>
+                <Text variant="titleSmall" style={{ fontWeight: "700", color: colors.text, marginBottom: 8 }}>
+                  Đề xuất của tôi
+                </Text>
+                {mySubmissions.map((s) => (
+                  <View key={s.id} style={[dcStyles.card, { marginBottom: 8 }]}>
+                    <Text variant="titleSmall" style={{ fontWeight: "600", color: colors.text }}>
+                      {s.name}{s.name_vi ? ` (${s.name_vi})` : ""}
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: colors.textMuted, marginTop: 2 }}>
+                      {new Date(s.created_at).toLocaleDateString("vi-VN")} · {s.sample_count} ảnh ·{" "}
+                      <Text style={{ color: s.status === "approved" ? colors.success : s.status === "rejected" ? colors.error : colors.warning }}>
+                        {s.status === "approved" ? "Đã duyệt" : s.status === "rejected" ? "Đã từ chối" : "Chờ duyệt"}
+                      </Text>
+                    </Text>
+                    {s.reject_reason ? (
+                      <Text variant="bodySmall" style={{ color: colors.error, fontStyle: "italic", marginTop: 4 }}>Lý do: {s.reject_reason}</Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
         }
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
@@ -294,11 +325,14 @@ export default function DiseaseScreen() {
       />
 
       <FAB
-        icon="plus"
-        label="Thêm bệnh"
+        icon={isAdmin ? "plus" : "send-outline"}
+        label={isAdmin ? "Thêm bệnh" : "Đề xuất bệnh mới"}
         style={styles.fab}
         color={colors.onPrimary}
-        onPress={() => setDialogOpen(true)}
+        onPress={() => {
+          if (isAdmin) setDialogOpen(true);
+          else navigation.navigate("DiseaseSubmit");
+        }}
       />
 
       <Portal>
