@@ -23,26 +23,54 @@ from routers.history import router as history_router
 from routers.dashboard import router as dashboard_router
 from routers.tasks import router as tasks_router
 from routers.diseases import router as diseases_router
+from routers.submissions import router as submissions_router
+from routers.admin import router as admin_router
 
 UPLOAD_DIR = Path(__file__).parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
+(UPLOAD_DIR / "submissions").mkdir(exist_ok=True)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: create tables + load ML models
     Base.metadata.create_all(bind=engine)
-    print("Đang tải model AI...")
+    print("\u0110ang tải model AI...")
     app.state.predictor = PlantDiseasePredictor()
     # Load custom disease prototypes from DB
     from database import SessionLocal
     db = SessionLocal()
     try:
         app.state.predictor.reload_prototypes(db)
+        _seed_admin(db)
     finally:
         db.close()
     print("Server sẵn sàng!")
     yield
+
+
+def _seed_admin(db):
+    """Tạo tài khoản admin từ biến môi trường ADMIN_USERNAME / ADMIN_PASSWORD nếu chưa tồn tại."""
+    import os
+    from models import User
+    from auth import hash_password
+    admin_user = os.getenv("ADMIN_USERNAME", "admin")
+    admin_pass = os.getenv("ADMIN_PASSWORD", "admin123")
+    existing = db.query(User).filter(User.username == admin_user).first()
+    if existing:
+        if not existing.is_admin:
+            existing.is_admin = 1
+            db.commit()
+        return
+    user = User(
+        username=admin_user,
+        hashed_password=hash_password(admin_pass),
+        full_name="Quản trị viên",
+        is_admin=1,
+    )
+    db.add(user)
+    db.commit()
+    print(f"[seed] Tạo admin: {admin_user}")
 
 
 app = FastAPI(title="PlantCare API", version="1.0.0", lifespan=lifespan)
@@ -70,6 +98,8 @@ app.include_router(history_router)
 app.include_router(dashboard_router)
 app.include_router(tasks_router)
 app.include_router(diseases_router)
+app.include_router(submissions_router)
+app.include_router(admin_router)
 
 
 @app.get("/")

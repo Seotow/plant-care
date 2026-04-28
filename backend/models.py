@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from database import Base
 
 
+
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -12,6 +14,7 @@ class User(Base):
     full_name = Column(String(100), default="")
     phone = Column(String(20), default="")
     location = Column(String(100), default="")
+    is_admin = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     gardens = relationship("Garden", back_populates="owner", cascade="all, delete-orphan")
@@ -70,7 +73,7 @@ class Task(Base):
 
 
 class DiseaseKnowledge(Base):
-    """Cơ sở tri thức bệnh cây — lưu trong DB, thay thế disease_knowledge.py."""
+    """Cơ sở tri thức bệnh cây."""
     __tablename__ = "disease_knowledge"
     id = Column(Integer, primary_key=True, index=True)
     label = Column(String(150), unique=True, nullable=False, index=True)
@@ -98,6 +101,35 @@ class DiseasePrototype(Base):
     disease_class_id = Column(Integer, ForeignKey("disease_classes.id"), unique=True, nullable=False)
     embedding = Column(LargeBinary, nullable=False)
     sample_count = Column(Integer, default=0)
+
+
+class DiseaseSubmission(Base):
+    """Đề xuất bệnh từ người dùng — chờ admin duyệt trước khi vào hệ thống chính."""
+    __tablename__ = "disease_submissions"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    name_vi = Column(String(150), default="")
+    symptoms = Column(Text, default="")  # mô tả triệu chứng bằng text
+    status = Column(String(20), default="pending")  # pending / approved / rejected
+    reject_reason = Column(Text, default="")
+    submitted_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    reviewed_at = Column(DateTime, nullable=True)
+
+    submitter = relationship("User", foreign_keys=[submitted_by])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+    samples = relationship("DiseaseSubmissionSample", back_populates="submission", cascade="all, delete-orphan")
+
+
+class DiseaseSubmissionSample(Base):
+    """Ảnh mẫu kèm theo đề xuất bệnh."""
+    __tablename__ = "disease_submission_samples"
+    id = Column(Integer, primary_key=True, index=True)
+    submission_id = Column(Integer, ForeignKey("disease_submissions.id"), nullable=False)
+    image_path = Column(String(255), default="")
+
+    submission = relationship("DiseaseSubmission", back_populates="samples")
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     disease_class = relationship("DiseaseClass", back_populates="prototype")
