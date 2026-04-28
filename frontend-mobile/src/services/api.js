@@ -137,12 +137,6 @@ class ApiService {
     });
   }
 
-  // ── History ──
-  getDetections(gardenId = null) {
-    const params = gardenId ? `?garden_id=${gardenId}` : "";
-    return this.request(`/api/detections/${params}`);
-  }
-
   getDetection(id) {
     return this.request(`/api/detections/${id}`);
   }
@@ -219,6 +213,83 @@ class ApiService {
     formData.append("name", name);
     formData.append("name_vi", nameVi);
     return this.request(`/api/diseases/${id}`, { method: "PATCH", body: formData });
+  }
+
+  // ── Detections: history with filters + progression ──
+  getDetections(gardenId = null, { fromDate, toDate, limit } = {}) {
+    const params = new URLSearchParams();
+    if (gardenId) params.append("garden_id", gardenId);
+    if (fromDate) params.append("from_date", fromDate);
+    if (toDate) params.append("to_date", toDate);
+    if (limit) params.append("limit", limit);
+    const qs = params.toString();
+    return this.request(`/api/detections/${qs ? "?" + qs : ""}`);
+  }
+
+  getGardenProgression(gardenId, days = 30) {
+    return this.request(`/api/detections/garden/${gardenId}/progression?days=${days}`);
+  }
+
+  // ── Disease submissions (UC13) ──
+  async submitDisease(name, nameVi, symptoms, imageUris) {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("name_vi", nameVi);
+    formData.append("symptoms", symptoms);
+    for (let i = 0; i < imageUris.length; i++) {
+      const uri = imageUris[i];
+      if (Platform.OS === "web") {
+        const resp = await fetch(uri);
+        const blob = await resp.blob();
+        formData.append("files", blob, `sample_${i}.jpg`);
+      } else {
+        const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+        const mime = ext === "png" ? "image/png" : "image/jpeg";
+        formData.append("files", { uri, type: mime, name: `sample_${i}.${ext}` });
+      }
+    }
+    return this.request("/api/submissions/", { method: "POST", body: formData });
+  }
+
+  getMySubmissions() {
+    return this.request("/api/submissions/mine");
+  }
+
+  // ── Admin (UC14) ──
+  adminGetSubmissions(status = "pending") {
+    return this.request(`/api/admin/submissions?status=${status}`);
+  }
+
+  adminApproveSubmission(id) {
+    return this.request(`/api/admin/submissions/${id}/approve`, { method: "POST" });
+  }
+
+  adminRejectSubmission(id, reason = "") {
+    const formData = new FormData();
+    formData.append("reason", reason);
+    return this.request(`/api/admin/submissions/${id}/reject`, { method: "POST", body: formData });
+  }
+
+  adminGetMe() {
+    return this.request("/api/admin/me");
+  }
+
+  // ── Admin Knowledge Base ──
+  adminGetKnowledge(search = "") {
+    const q = search ? `?search=${encodeURIComponent(search)}` : "";
+    return this.request(`/api/admin/knowledge${q}`);
+  }
+
+  adminGetKnowledgeItem(id) {
+    return this.request(`/api/admin/knowledge/${id}`);
+  }
+
+  adminUpdateKnowledge(id, { mo_ta, nguyen_nhan, xu_ly }) {
+    const formData = new FormData();
+    formData.append("mo_ta", mo_ta);
+    formData.append("nguyen_nhan", nguyen_nhan);
+    formData.append("xu_ly", JSON.stringify(xu_ly));
+    return this.request(`/api/admin/knowledge/${id}`, { method: "PATCH", body: formData });
   }
 
   // ── Test Grad-CAM ──
