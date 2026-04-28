@@ -25,7 +25,7 @@ def register(body: UserRegister, db: Session = Depends(get_db)):
     token = create_token(user.id)
     return TokenResponse(
         access_token=token,
-        user={"id": user.id, "username": user.username, "full_name": user.full_name},
+        user={"id": user.id, "username": user.username, "full_name": user.full_name, "is_admin": bool(user.is_admin)},
     )
 
 
@@ -37,7 +37,7 @@ def login(body: UserLogin, db: Session = Depends(get_db)):
     token = create_token(user.id)
     return TokenResponse(
         access_token=token,
-        user={"id": user.id, "username": user.username, "full_name": user.full_name},
+        user={"id": user.id, "username": user.username, "full_name": user.full_name, "is_admin": bool(user.is_admin)},
     )
 
 
@@ -49,6 +49,7 @@ def get_me(user: User = Depends(get_current_user)):
         "full_name": user.full_name,
         "phone": user.phone,
         "location": user.location,
+        "is_admin": bool(user.is_admin),
     }
 
 

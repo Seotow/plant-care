@@ -1,4 +1,8 @@
-"""API router for managing disease classes (including user-uploaded diseases)."""
+"""API router for managing disease classes.
+
+POST / và POST /{id}/samples chỉ dành cho admin.
+Người dùng thường phải dùng /api/submissions để đề xuất bệnh.
+"""
 import uuid
 import logging
 import cv2
@@ -9,6 +13,12 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User, DiseaseClass, DiseasePrototype, DiseaseSample
 from auth import get_current_user
+
+
+def _require_admin(user: User = Depends(get_current_user)) -> User:
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Chỉ admin mới có quyền tạo/sửa bệnh trực tiếp. Hãy dùng tính năng Đề xuất bệnh.")
+    return user
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +52,7 @@ async def create_disease(
     name: str = Form(...),
     name_vi: str = Form(""),
     files: list[UploadFile] = File(...),
-    user: User = Depends(get_current_user),
+    user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
     if len(files) < MIN_SAMPLES:
@@ -128,7 +138,7 @@ async def add_samples(
     disease_id: int,
     request: Request,
     files: list[UploadFile] = File(...),
-    user: User = Depends(get_current_user),
+    user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
     disease = db.query(DiseaseClass).filter(DiseaseClass.id == disease_id).first()
@@ -200,7 +210,7 @@ def update_disease(
     request: Request,
     name: str = Form(...),
     name_vi: str = Form(""),
-    user: User = Depends(get_current_user),
+    user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
     disease = db.query(DiseaseClass).filter(DiseaseClass.id == disease_id).first()
@@ -231,7 +241,7 @@ def update_disease(
 def delete_disease(
     disease_id: int,
     request: Request,
-    user: User = Depends(get_current_user),
+    user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
     disease = db.query(DiseaseClass).filter(DiseaseClass.id == disease_id).first()
