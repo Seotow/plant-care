@@ -1,11 +1,18 @@
-import React, { useCallback, useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { ActivityIndicator, Button, Text } from "react-native-paper";
+import React, { useCallback, useRef, useState } from "react";
+import { Dimensions, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Button, Chip, Text } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
 import ScreenWrapper from "../components/ScreenWrapper";
 import { colors, shadows, spacing } from "../theme";
+
+let LineChart = null;
+try {
+  // react-native-chart-kit is optional, may not be installed in web
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  LineChart = require("react-native-chart-kit").LineChart;
+} catch (_) {}
 
 function formatLabel(label) {
   return label.replace(/___/g, " — ").replace(/_/g, " ");
@@ -31,6 +38,22 @@ export default function GardenDetailScreen({ navigation, route }) {
   const { garden } = route.params;
   const [detections, setDetections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [progression, setProgression] = useState(null);
+  const [progDays, setProgDays] = useState(30);
+  const [progLoading, setProgLoading] = useState(false);
+  const screenWidth = Dimensions.get("window").width - 48;
+
+  const loadProgression = useCallback(
+    (days) => {
+      setProgLoading(true);
+      api
+        .getGardenProgression(garden.id, days)
+        .then(setProgression)
+        .catch(() => setProgression(null))
+        .finally(() => setProgLoading(false));
+    },
+    [garden.id]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -39,7 +62,8 @@ export default function GardenDetailScreen({ navigation, route }) {
         .then(setDetections)
         .catch(() => {})
         .finally(() => setLoading(false));
-    }, [garden.id])
+      loadProgression(progDays);
+    }, [garden.id, loadProgression, progDays])
   );
 
   const healthColor = garden.health_score >= 80 ? colors.success : garden.health_score >= 50 ? colors.warning : colors.error;
@@ -78,6 +102,75 @@ export default function GardenDetailScreen({ navigation, route }) {
       >
         Quét bệnh cho vườn này
       </Button>
+
+      {/* ── Disease progression chart (UC08) ── */}
+      {Platform.OS !== "web" && LineChart && (
+        <View style={styles.chartSection}>
+          <View style={styles.chartHeader}>
+            <MaterialCommunityIcons name="chart-line" size={20} color={colors.text} />
+            <Text variant="titleMedium" style={styles.heading}>Diễn biến bệnh</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.periodRow}
+            contentContainerStyle={{ gap: 8, paddingRight: 4 }}
+          >
+            {[7, 14, 30, 90].map((d) => (
+              <Chip
+                key={d}
+                selected={progDays === d}
+                onPress={() => {
+                  setProgDays(d);
+                  loadProgression(d);
+                }}
+                compact
+              >
+                {d} ngày
+              </Chip>
+            ))}
+          </ScrollView>
+          {progLoading ? (
+            <ActivityIndicator style={{ marginTop: 12 }} color={colors.primary} />
+          ) : progression && progression.labels?.length > 1 ? (
+            <LineChart
+              data={{
+                labels: progression.labels.map((l) =>
+                  l.split("-").slice(1).join("/")
+                ),
+                datasets: [
+                  {
+                    data: progression.diseased_series,
+                    color: () => colors.error,
+                    strokeWidth: 2,
+                  },
+                ],
+                legend: ["Lượt phát hiện bệnh"],
+              }}
+              width={screenWidth}
+              height={180}
+              chartConfig={{
+                backgroundColor: colors.surface,
+                backgroundGradientFrom: colors.surface,
+                backgroundGradientTo: colors.surface,
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(239,68,68,${opacity})`,
+                labelColor: () => colors.textSecondary,
+                style: { borderRadius: 12 },
+                propsForDots: { r: "4", strokeWidth: "1", stroke: colors.error },
+              }}
+              style={styles.chart}
+              bezier
+              withInnerLines={false}
+              withOuterLines={false}
+            />
+          ) : (
+            <Text variant="bodySmall" style={styles.noChartText}>
+              Chưa có dữ liệu trong kỳ này
+            </Text>
+          )}
+        </View>
+      )}
 
       <View style={styles.historyHeader}>
         <MaterialCommunityIcons name="history" size={20} color={colors.text} />
@@ -146,4 +239,12 @@ const styles = StyleSheet.create({
   disease: { fontWeight: "600" },
   detMeta: { color: colors.textSecondary, marginTop: 4 },
   date: { color: colors.textMuted, marginTop: 2 },
+  chartSection: {
+    backgroundColor: colors.surface, borderRadius: 20, padding: spacing.md,
+    marginBottom: spacing.lg, ...shadows.small,
+  },
+  chartHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  periodRow: { marginBottom: 12 },
+  chart: { borderRadius: 12 },
+  noChartText: { color: colors.textMuted, textAlign: "center", marginTop: 12, marginBottom: 4 },
 });
