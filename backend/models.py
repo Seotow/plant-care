@@ -102,6 +102,8 @@ class DiseasePrototype(Base):
     embedding = Column(LargeBinary, nullable=False)
     sample_count = Column(Integer, default=0)
 
+    disease_class = relationship("DiseaseClass", back_populates="prototype")
+
 
 class DiseaseSubmission(Base):
     """Đề xuất bệnh từ người dùng — chờ admin duyệt trước khi vào hệ thống chính."""
@@ -131,8 +133,6 @@ class DiseaseSubmissionSample(Base):
 
     submission = relationship("DiseaseSubmission", back_populates="samples")
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-    disease_class = relationship("DiseaseClass", back_populates="prototype")
 
 
 class DiseaseSample(Base):

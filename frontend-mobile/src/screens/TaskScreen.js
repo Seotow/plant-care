@@ -61,6 +61,7 @@ async function cancelTaskNotification(taskId) {
       await AsyncStorage.removeItem(`task_notif_${taskId}`);
     }
   } catch (_) {}
+}
 
 const PRIORITY_OPTIONS = [
   { value: "high", label: "Cao", color: colors.error },
