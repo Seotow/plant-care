@@ -122,7 +122,9 @@ async def scan_image(
     if results:
         healthy_count = sum(1 for d in results if "healthy" in d["label"].lower())
         disease_ratio = 1 - (healthy_count / len(results))
-        new_score = max(0, garden.health_score - int(disease_ratio * 5))
+        # Giảm tối đa 10đ nếu toàn bệnh, phục hồi tối đa 5đ nếu toàn lành
+        delta = int(disease_ratio * 10) - int((1 - disease_ratio) * 5)
+        new_score = max(0, min(100, garden.health_score - delta))
         garden.health_score = new_score
         db.commit()
 

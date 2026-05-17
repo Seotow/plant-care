@@ -307,6 +307,21 @@ def _build_overlay(img_bgr: np.ndarray, cam_np: np.ndarray, label: str = "") -> 
     cam_resized = cv2.resize(cam_np, (W, H), interpolation=cv2.INTER_LANCZOS4)
     cam_resized = np.clip(cam_resized, 0.0, 1.0)
 
+    # ── Step 0: Edge suppression — zero out 12% border to exclude hands/foreign objects ──
+    # Cosine ramp: full activation at 12% inward, fades to 0 at the pixel edge
+    BORDER = 0.12
+    ys = np.linspace(0.0, 1.0, H, dtype=np.float32)
+    xs = np.linspace(0.0, 1.0, W, dtype=np.float32)
+    ry = np.clip(np.minimum(ys, 1.0 - ys) / BORDER, 0.0, 1.0)
+    rx = np.clip(np.minimum(xs, 1.0 - xs) / BORDER, 0.0, 1.0)
+    edge_mask = (0.5 - 0.5 * np.cos(np.pi * np.outer(ry, rx))).astype(np.float32)
+    # outer product gives a hard corner — smooth it with the minimum
+    ry2d = ry[:, np.newaxis] * np.ones((1, W), dtype=np.float32)
+    rx2d = np.ones((H, 1), dtype=np.float32) * rx[np.newaxis, :]
+    rmin = np.minimum(ry2d, rx2d)
+    edge_mask = (0.5 - 0.5 * np.cos(np.pi * rmin)).astype(np.float32)
+    cam_resized = cam_resized * edge_mask
+
     # ── Step 1: Hard leaf mask — zero out background pixels ──
     fg_mask = _leaf_foreground_mask(img_bgr)
     cam_resized = cam_resized * fg_mask
@@ -649,7 +664,7 @@ class PlantDiseasePredictor:
     # ── Old Swin Classifier (38-class, lazy-loaded) ──
 
     def _load_classifier(self):
-        """Load swin_classifier.pth on first use."""
+        """Load swin_classifier.pth on first use — fully offline, no HF Hub calls."""
         if hasattr(self, "_classifier"):
             return
         clf_path = MODEL_DIR / "swin_classifier.pth"
@@ -659,16 +674,27 @@ class PlantDiseasePredictor:
         ckpt = torch.load(str(clf_path), map_location=self.device, weights_only=False)
         self._clf_class_names = ckpt["class_names"]
         num_labels = ckpt.get("num_labels", len(self._clf_class_names))
-        model_ckpt = ckpt.get("model_ckpt", "microsoft/swin-small-patch4-window7-224")
 
-        self._classifier = SwinForImageClassification.from_pretrained(
-            model_ckpt,
-            num_labels=num_labels,
-            ignore_mismatched_sizes=True,
-        )
+        # Load từ config local — không cần internet
+        local_config_dir = MODEL_DIR / "swin_config_local"
+        if local_config_dir.exists():
+            config = SwinConfig.from_pretrained(str(local_config_dir))
+        else:
+            # Fallback: tạo config tối thiểu cho Swin-Small
+            config = SwinConfig(
+                image_size=224, patch_size=4, num_channels=3,
+                embed_dim=96, depths=[2, 2, 18, 2], num_heads=[3, 6, 12, 24],
+                window_size=7, mlp_ratio=4.0, hidden_dropout_prob=0.0,
+                attention_probs_dropout_prob=0.0,
+            )
+        config.num_labels = num_labels
+        config.id2label = {i: name for i, name in enumerate(self._clf_class_names)}
+        config.label2id = {name: i for i, name in enumerate(self._clf_class_names)}
+
+        self._classifier = SwinForImageClassification(config)
         self._classifier.load_state_dict(ckpt["model_state"])
         self._classifier.to(self.device).eval()
-        print(f"[Predictor] Classifier loaded: {num_labels} classes, epoch {ckpt.get('epoch')}")
+        print(f"[Predictor] Classifier loaded (offline): {num_labels} classes, epoch {ckpt.get('epoch')}")
 
     def classify_crop(self, img_bgr, top_k=3):
         """Classify a crop using the old 38-class SwinForImageClassification.
