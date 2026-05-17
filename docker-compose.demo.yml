@@ -1,0 +1,58 @@
+# docker-compose.demo.yml — Production-like stack for local demo
+# Dùng lệnh: docker compose -f docker-compose.demo.yml up --build
+#
+# Truy cập:
+#   Browser PC : http://plantcare.local  (sau khi thêm hosts)
+#   iPhone     : http://<IP_LAN>          (cùng mạng hotspot)
+#   Expo Go    : scan QR từ `npx expo start --lan` trên host machine
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: plantcare
+      POSTGRES_PASSWORD: plantcare
+      POSTGRES_DB: plantcare
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plantcare"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    # Không mount source code — dùng image đã build (stable)
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    volumes:
+      - ./models:/app/models:ro          # model weights read-only
+      - backend-uploads:/app/uploads     # ảnh upload persisted
+    environment:
+      DATABASE_URL: postgresql://plantcare:plantcare@db:5432/plantcare
+      MODEL_DIR: /app/models
+      SECRET_KEY: plantcare-thesis-demo-2026
+      TRANSFORMERS_OFFLINE: "1"
+      HF_DATASETS_OFFLINE: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Port 8000 vẫn expose để Expo Go trên điện thoại kết nối trực tiếp
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: .                        # root — để Dockerfile copy cả frontend-mobile/
+      dockerfile: docker/nginx/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  backend-uploads:

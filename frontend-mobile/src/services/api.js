@@ -6,9 +6,14 @@ function getBaseUrl() {
   const override = Constants.expoConfig?.extra?.apiUrl;
   if (override) return override;
 
-  // Web inside Docker: backend is at same host, port 8000
+  // Web — detect Nginx (port 80/443) vs dev server
   if (Platform.OS === "web" && typeof window !== "undefined") {
-    const { protocol, hostname } = window.location;
+    const { protocol, hostname, port } = window.location;
+    // Nginx demo: port 80/443 → API proxied at same origin, no :8000 needed
+    if (!port || port === "80" || port === "443") {
+      return `${protocol}//${hostname}`;
+    }
+    // Dev server (port 8081, etc.) → connect directly to backend:8000
     return `${protocol}//${hostname}:8000`;
   }
 
