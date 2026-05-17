@@ -42,5 +42,5 @@ Thumbs.db
 .env
 .env.*
 
-# Utility scripts (not part of app)
+# Utility scripts (local only, not part of app)
 scripts/
