@@ -45,7 +45,7 @@ export default function WebSidebar({ activeRoute, onNavigate }) {
   return (
     <View style={styles.sidebar}>
       <View style={styles.brand}>
-        <Text style={styles.brandIcon}>🌿</Text>
+        <MaterialCommunityIcons name="leaf" size={28} color={colors.primary} />
         <Text variant="titleLarge" style={styles.brandText}>
           PlantCare
         </Text>
@@ -87,10 +87,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 32,
-  },
-  brandIcon: {
-    fontSize: 28,
-    marginRight: 10,
   },
   brandText: {
     fontWeight: "800",

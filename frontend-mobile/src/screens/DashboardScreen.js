@@ -15,7 +15,7 @@ function WelcomeBanner({ name, location }) {
     <View style={bannerStyles.container}>
       <View style={bannerStyles.textWrap}>
         <Text variant="headlineSmall" style={bannerStyles.greeting}>
-          Xin chào, {name} 👋
+          Xin chào, {name}
         </Text>
         <Text variant="bodyMedium" style={bannerStyles.location}>
           {location} • Dữ liệu hôm nay

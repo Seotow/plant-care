@@ -85,7 +85,7 @@ export default function DetectionDetailScreen({ route }) {
           </Text>
           <View style={styles.metaRow}>
             <Chip compact style={[styles.confChip, { backgroundColor: statusColor + "20" }]}
-              textStyle={{ color: statusColor, fontWeight: "700" }}>
+              textStyle={{ color: statusColor, fontWeight: "700", lineHeight: null }}>
               Tin cậy: {(detection.confidence * 100).toFixed(1)}%
             </Chip>
             <Text variant="bodySmall" style={styles.dateMeta}>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   resultContent: { flex: 1, padding: spacing.md },
   labelText: { fontWeight: "800", marginBottom: 8 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
-  confChip: { height: 28 },
+  confChip: { height: 32 },
   dateMeta: { color: colors.textMuted },
   gardenRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   gardenText: { color: colors.textSecondary },

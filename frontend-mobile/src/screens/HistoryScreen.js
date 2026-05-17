@@ -35,7 +35,7 @@ function HistoryCard({ item, onPress }) {
           <Chip
             compact
             style={[hStyles.chip, { backgroundColor: statusBg }]}
-            textStyle={{ color: statusColor, fontSize: 11, fontWeight: "700" }}
+            textStyle={{ color: statusColor, fontSize: 11, fontWeight: "700", lineHeight: null }}
           >
             {healthy ? "Khỏe" : "Bệnh"}
           </Chip>
@@ -70,7 +70,7 @@ const hStyles = StyleSheet.create({
   metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
   meta: { color: colors.textSecondary },
   footerRow: { flexDirection: "row", justifyContent: "space-between" },
-  conf: { fontWeight: "600", color: colors.textSecondary },
+  conf: { fontWeight: "600", color: colors.textSecondary, lineHeight: 16 },
   date: { color: colors.textMuted },
 });
 
