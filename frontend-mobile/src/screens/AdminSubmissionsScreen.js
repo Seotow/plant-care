@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Alert, Image, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
   ActivityIndicator,
   Button,
@@ -35,6 +35,7 @@ export default function AdminSubmissionsScreen() {
   const [rejectDialog, setRejectDialog] = useState(null); // { id, name }
   const [rejectReason, setRejectReason] = useState("");
   const [processing, setProcessing] = useState(null); // id being processed
+  const [previewImg, setPreviewImg] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,8 +95,9 @@ export default function AdminSubmissionsScreen() {
   };
 
   return (
-    <ScreenWrapper>
-      {/* Status filter tabs */}
+    <>
+      <ScreenWrapper>
+        {/* Status filter tabs */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -162,11 +164,12 @@ export default function AdminSubmissionsScreen() {
               {s.sample_images?.length > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imgRow}>
                   {s.sample_images.slice(0, 5).map((url, i) => (
-                    <Image
-                      key={i}
-                      source={{ uri: api.getImageUrl(url) }}
-                      style={styles.sampleImg}
-                    />
+                    <Pressable key={i} onPress={() => setPreviewImg(api.getImageUrl(url))}>
+                      <Image
+                        source={{ uri: api.getImageUrl(url) }}
+                        style={styles.sampleImg}
+                      />
+                    </Pressable>
                   ))}
                   {s.sample_count > 5 && (
                     <View style={styles.moreImgBadge}>
@@ -242,7 +245,24 @@ export default function AdminSubmissionsScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </ScreenWrapper>
+      </ScreenWrapper>
+
+      <Modal
+        visible={!!previewImg}
+        transparent
+        animationType={'fade'}
+        statusBarTranslucent
+        onRequestClose={() => setPreviewImg(null)}
+      >
+        <Pressable style={styles.previewOverlay} onPress={() => setPreviewImg(null)}>
+          <Image
+            source={{ uri: previewImg }}
+            style={styles.previewImage}
+            resizeMode={'contain'}
+          />
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -269,8 +289,14 @@ const styles = StyleSheet.create({
   moreImgBadge: {
     width: 68, height: 68, borderRadius: 10, backgroundColor: colors.primary,
     alignItems: "center", justifyContent: "center",
+  },  previewOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 999,
   },
-  actionRow: { flexDirection: "row", gap: 10 },
+  previewImage: { width: "90%", height: "75%", borderRadius: 12 },  actionRow: { flexDirection: "row", gap: 10 },
   approveBtn: { flex: 1 },
   rejectBtn: { flex: 1, borderColor: colors.error },
 });
