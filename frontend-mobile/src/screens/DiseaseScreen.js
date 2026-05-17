@@ -100,10 +100,9 @@ export default function DiseaseScreen({ navigation }) {
   const [diseases, setDiseases] = useState([]);
   const [mySubmissions, setMySubmissions] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [plantName, setPlantName] = useState("");
-  const [plantNameVi, setPlantNameVi] = useState("");
   const [diseaseName, setDiseaseName] = useState("");
   const [diseaseNameVi, setDiseaseNameVi] = useState("");
+  const [symptoms, setSymptoms] = useState("");
   const [isHealthyClass, setIsHealthyClass] = useState(false);
   const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -111,20 +110,33 @@ export default function DiseaseScreen({ navigation }) {
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDisease, setEditDisease] = useState(null);
-  const [editPlantName, setEditPlantName] = useState("");
-  const [editPlantNameVi, setEditPlantNameVi] = useState("");
   const [editDiseaseName, setEditDiseaseName] = useState("");
   const [editDiseaseNameVi, setEditDiseaseNameVi] = useState("");
+  const [editSymptoms, setEditSymptoms] = useState("");
   const [editIsHealthy, setEditIsHealthy] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
 
+  // User submit dialog (web — DiseaseSubmit is not in this stack)
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [submitName, setSubmitName] = useState("");
+  const [submitNameVi, setSubmitNameVi] = useState("");
+  const [submitSymptoms, setSubmitSymptoms] = useState("");
+  const [submitImages, setSubmitImages] = useState([]);
+  const [submitSaving, setSubmitSaving] = useState(false);
+
   const resetForm = () => {
-    setPlantName("");
-    setPlantNameVi("");
     setDiseaseName("");
     setDiseaseNameVi("");
+    setSymptoms("");
     setIsHealthyClass(false);
     setImages([]);
+  };
+
+  const resetSubmitForm = () => {
+    setSubmitName("");
+    setSubmitNameVi("");
+    setSubmitSymptoms("");
+    setSubmitImages([]);
   };
 
   const fetchDiseases = useCallback(() => {
@@ -150,63 +162,84 @@ export default function DiseaseScreen({ navigation }) {
     }
   };
 
+  const pickSubmitImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets) {
+      setSubmitImages((prev) => [...prev, ...result.assets.map((a) => a.uri)]);
+    }
+  };
+
   const handleCreate = async () => {
-    if (!plantName.trim()) return;
     if (!isHealthyClass && !diseaseName.trim()) return;
     if (images.length < 3) {
       Alert.alert("Lỗi", "Cần ít nhất 3 ảnh mẫu");
       return;
     }
-    const diseaseSlug = isHealthyClass ? "healthy" : diseaseName.trim();
-    const diseaseSlugVi = isHealthyClass ? "Khỏe mạnh" : (diseaseNameVi.trim() || diseaseSlug);
-    const combinedName = `${plantName.trim()}___${diseaseSlug}`;
-    const combinedNameVi = `${plantNameVi.trim() || plantName.trim()} — ${diseaseSlugVi}`;
+    const name = isHealthyClass ? "healthy" : diseaseName.trim();
+    const nameVi = isHealthyClass ? "Khỏe mạnh" : (diseaseNameVi.trim() || name);
     setSaving(true);
     try {
-      await api.createDisease(combinedName, combinedNameVi, images);
+      await api.createDisease(name, nameVi, images);
       resetForm();
       setDialogOpen(false);
       fetchDiseases();
-      Alert.alert("Thành công", `Đã thêm "${combinedNameVi}"`);
+      Alert.alert("Thành công", `Đã thêm "${nameVi}"`);
     } catch (err) {
       Alert.alert("Lỗi", err.message || "Không thể thêm bệnh");
     }
     setSaving(false);
   };
 
+  const handleUserSubmit = async () => {
+    if (!submitName.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập tên bệnh (tiếng Anh)");
+      return;
+    }
+    if (!submitSymptoms.trim()) {
+      Alert.alert("Lỗi", "Vui lòng mô tả triệu chứng");
+      return;
+    }
+    if (submitImages.length < 3) {
+      Alert.alert("Lỗi", "Cần ít nhất 3 ảnh mẫu");
+      return;
+    }
+    setSubmitSaving(true);
+    try {
+      await api.submitDisease(submitName.trim(), submitNameVi.trim(), submitSymptoms.trim(), submitImages);
+      resetSubmitForm();
+      setSubmitDialogOpen(false);
+      fetchDiseases();
+      Alert.alert("Đã gửi đề xuất", "Đề xuất của bạn đang chờ admin xem xét.");
+    } catch (err) {
+      Alert.alert("Lỗi", err.message || "Không thể gửi đề xuất");
+    }
+    setSubmitSaving(false);
+  };
+
   const handleEdit = (disease) => {
-    const parts = disease.name.split("___");
-    const plant = parts[0] || "";
-    const diseaseSlug = parts[1] || "";
-    const isHealthy = diseaseSlug.toLowerCase() === "healthy";
-
-    // Parse name_vi: "Cà chua — Đốm vi khuẩn" or "Cà chua — Khỏe mạnh"
-    const viParts = (disease.name_vi || "").split(" \u2014 ");
-    const plantVi = viParts[0] || "";
-    const diseaseVi = viParts[1] || "";
-
+    const isHealthy = (disease.name || "").toLowerCase().includes("healthy");
     setEditDisease(disease);
-    setEditPlantName(plant);
-    setEditPlantNameVi(plantVi !== plant ? plantVi : "");
-    setEditDiseaseName(isHealthy ? "" : diseaseSlug);
-    setEditDiseaseNameVi(isHealthy ? "" : (diseaseVi !== diseaseSlug ? diseaseVi : ""));
+    setEditDiseaseName(isHealthy ? "" : (disease.name || ""));
+    setEditDiseaseNameVi(isHealthy ? "" : (disease.name_vi || ""));
+    setEditSymptoms("");
     setEditIsHealthy(isHealthy);
     setEditDialogOpen(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editPlantName.trim()) return;
     if (!editIsHealthy && !editDiseaseName.trim()) return;
-    const slug = editIsHealthy ? "healthy" : editDiseaseName.trim();
-    const slugVi = editIsHealthy ? "Khỏe mạnh" : (editDiseaseNameVi.trim() || slug);
-    const newName = `${editPlantName.trim()}___${slug}`;
-    const newNameVi = `${editPlantNameVi.trim() || editPlantName.trim()} \u2014 ${slugVi}`;
+    const name = editIsHealthy ? "healthy" : editDiseaseName.trim();
+    const nameVi = editIsHealthy ? "Kh\u1ecfe m\u1ea1nh" : (editDiseaseNameVi.trim() || name);
     setEditSaving(true);
     try {
-      await api.updateDisease(editDisease.id, newName, newNameVi);
+      await api.updateDisease(editDisease.id, name, nameVi);
       setEditDialogOpen(false);
       fetchDiseases();
-      Alert.alert("Thành công", `Đã cập nhật "${newNameVi}"`);
+      Alert.alert("Th\u00e0nh c\u00f4ng", `\u0110\u00e3 c\u1eadp nh\u1eadt "${nameVi}"`);
     } catch (err) {
       Alert.alert("Lỗi", err.message || "Không thể cập nhật");
     }
@@ -331,6 +364,7 @@ export default function DiseaseScreen({ navigation }) {
         color={colors.onPrimary}
         onPress={() => {
           if (isAdmin) setDialogOpen(true);
+          else if (Platform.OS === "web") setSubmitDialogOpen(true);
           else navigation.navigate("DiseaseSubmit");
         }}
       />
@@ -343,22 +377,6 @@ export default function DiseaseScreen({ navigation }) {
         >
           <Dialog.Title>Chỉnh sửa bệnh</Dialog.Title>
           <Dialog.Content>
-            <TextInput
-              label="Tên cây (EN) *"
-              value={editPlantName}
-              onChangeText={setEditPlantName}
-              mode="outlined"
-              style={styles.input}
-              outlineStyle={styles.inputOutline}
-            />
-            <TextInput
-              label="Tên cây (VI)"
-              value={editPlantNameVi}
-              onChangeText={setEditPlantNameVi}
-              mode="outlined"
-              style={styles.input}
-              outlineStyle={styles.inputOutline}
-            />
             <View style={styles.switchRow}>
               <Text variant="bodyMedium" style={styles.switchLabel}>Loại khỏe mạnh</Text>
               <Switch
@@ -385,6 +403,16 @@ export default function DiseaseScreen({ navigation }) {
                   style={styles.input}
                   outlineStyle={styles.inputOutline}
                 />
+                <TextInput
+                  label="Mô tả triệu chứng"
+                  value={editSymptoms}
+                  onChangeText={setEditSymptoms}
+                  mode="outlined"
+                  multiline
+                  numberOfLines={3}
+                  style={styles.input}
+                  outlineStyle={styles.inputOutline}
+                />
               </>
             )}
           </Dialog.Content>
@@ -393,7 +421,7 @@ export default function DiseaseScreen({ navigation }) {
             <Button
               onPress={handleSaveEdit}
               loading={editSaving}
-              disabled={!editPlantName.trim() || (!editIsHealthy && !editDiseaseName.trim())}
+              disabled={!editIsHealthy && !editDiseaseName.trim()}
               mode="contained"
               style={styles.createBtn}
             >
@@ -409,25 +437,6 @@ export default function DiseaseScreen({ navigation }) {
         >
           <Dialog.Title>Thêm bệnh mới</Dialog.Title>
           <Dialog.Content>
-            <TextInput
-              label="Tên cây (EN) *"
-              value={plantName}
-              onChangeText={setPlantName}
-              mode="outlined"
-              placeholder="vd: Tomato, Bell_pepper"
-              style={styles.input}
-              outlineStyle={styles.inputOutline}
-            />
-            <TextInput
-              label="Tên cây (VI)"
-              value={plantNameVi}
-              onChangeText={setPlantNameVi}
-              mode="outlined"
-              placeholder="vd: Cà chua, Ớt chuông"
-              style={styles.input}
-              outlineStyle={styles.inputOutline}
-            />
-
             <View style={styles.switchRow}>
               <Text variant="bodyMedium" style={styles.switchLabel}>Loại khỏe mạnh</Text>
               <Switch
@@ -444,7 +453,7 @@ export default function DiseaseScreen({ navigation }) {
                   value={diseaseName}
                   onChangeText={setDiseaseName}
                   mode="outlined"
-                  placeholder="vd: Early_blight, Bacterial_spot"
+                  placeholder="vd: Early_blight, Brown_spot"
                   style={styles.input}
                   outlineStyle={styles.inputOutline}
                 />
@@ -453,7 +462,17 @@ export default function DiseaseScreen({ navigation }) {
                   value={diseaseNameVi}
                   onChangeText={setDiseaseNameVi}
                   mode="outlined"
-                  placeholder="vd: Cháy sớm, Đốm vi khuẩn"
+                  placeholder="vd: Cháy sớm, Đốm nâu"
+                  style={styles.input}
+                  outlineStyle={styles.inputOutline}
+                />
+                <TextInput
+                  label="Mô tả triệu chứng"
+                  value={symptoms}
+                  onChangeText={setSymptoms}
+                  mode="outlined"
+                  multiline
+                  numberOfLines={3}
                   style={styles.input}
                   outlineStyle={styles.inputOutline}
                 />
@@ -490,11 +509,79 @@ export default function DiseaseScreen({ navigation }) {
             <Button
               onPress={handleCreate}
               loading={saving}
-              disabled={!plantName.trim() || (!isHealthyClass && !diseaseName.trim()) || images.length < 3}
+              disabled={(!isHealthyClass && !diseaseName.trim()) || images.length < 3}
               mode="contained"
               style={styles.createBtn}
             >
               Tạo
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* User disease submit dialog — web only */}
+        <Dialog
+          visible={submitDialogOpen}
+          onDismiss={() => { setSubmitDialogOpen(false); resetSubmitForm(); }}
+          style={styles.dialog}
+        >
+          <Dialog.Title>Đề xuất bệnh mới</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodySmall" style={{ color: colors.primary, marginBottom: 12 }}>
+              Đề xuất sẽ được admin xem xét trước khi thêm vào hệ thống. Cần tối thiểu 3 ảnh mẫu.
+            </Text>
+            <TextInput
+              label="Tên bệnh (tiếng Anh) *"
+              value={submitName}
+              onChangeText={setSubmitName}
+              mode="outlined"
+              placeholder="Ví dụ: Brown Spot"
+              style={styles.input}
+              outlineStyle={styles.inputOutline}
+            />
+            <TextInput
+              label="Tên bệnh (tiếng Việt)"
+              value={submitNameVi}
+              onChangeText={setSubmitNameVi}
+              mode="outlined"
+              placeholder="Ví dụ: Đốm nâu"
+              style={styles.input}
+              outlineStyle={styles.inputOutline}
+            />
+            <TextInput
+              label="Mô tả triệu chứng *"
+              value={submitSymptoms}
+              onChangeText={setSubmitSymptoms}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              placeholder="Mô tả màu sắc, hình dạng vết bệnh, vị trí trên lá..."
+              style={styles.input}
+              outlineStyle={styles.inputOutline}
+            />
+            <Pressable onPress={pickSubmitImages} style={styles.imagePicker}>
+              <MaterialCommunityIcons name="image-multiple-outline" size={24} color={colors.primary} />
+              <Text variant="bodyMedium" style={styles.imagePickerText}>
+                {submitImages.length > 0
+                  ? `Đã chọn ${submitImages.length} ảnh`
+                  : "Chọn ảnh mẫu (tối thiểu 3)"}
+              </Text>
+            </Pressable>
+            {submitImages.length > 0 && submitImages.length < 3 && (
+              <Text variant="labelSmall" style={styles.warn}>
+                Cần thêm {3 - submitImages.length} ảnh nữa
+              </Text>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => { setSubmitDialogOpen(false); resetSubmitForm(); }}>Hủy</Button>
+            <Button
+              onPress={handleUserSubmit}
+              loading={submitSaving}
+              disabled={!submitName.trim() || !submitSymptoms.trim() || submitImages.length < 3}
+              mode="contained"
+              style={styles.createBtn}
+            >
+              Gửi
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -529,7 +616,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderRadius: 16,
   },
-  dialog: { borderRadius: 20 },
+  dialog: {
+    borderRadius: 20,
+    ...(Platform.OS === "web" ? { maxWidth: 480, alignSelf: "center", width: "90%" } : {}),
+  },
   input: { marginBottom: 12, backgroundColor: colors.surface },
   inputOutline: { borderRadius: 12 },
   imagePicker: {
