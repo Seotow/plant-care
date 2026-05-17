@@ -6,9 +6,7 @@ __pycache__/
 *.egg-info/
 
 # ML model weights (large files — use Git LFS or download separately)
-models/*.pt
-models/*.pth
-models/*.npz
+models/
 
 # SQLite local dev DB
 backend/plantcare.db

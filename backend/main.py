@@ -1,4 +1,5 @@
 import sys
+import os
 import logging
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -7,6 +8,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+
+# Ngăn transformers gọi HuggingFace Hub — load hoàn toàn từ cache local
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
