@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Dimensions, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Button, Chip, Text } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -41,7 +41,7 @@ export default function GardenDetailScreen({ navigation, route }) {
   const [progression, setProgression] = useState(null);
   const [progDays, setProgDays] = useState(30);
   const [progLoading, setProgLoading] = useState(false);
-  const screenWidth = Dimensions.get("window").width - 48;
+  const [chartContainerWidth, setChartContainerWidth] = useState(0);
 
   const loadProgression = useCallback(
     (days) => {
@@ -104,8 +104,8 @@ export default function GardenDetailScreen({ navigation, route }) {
       </Button>
 
       {/* ── Disease progression chart (UC08) ── */}
-      {Platform.OS !== "web" && LineChart && (
-        <View style={styles.chartSection}>
+      {LineChart && (
+        <View style={styles.chartSection} onLayout={(e) => setChartContainerWidth(e.nativeEvent.layout.width)}>
           <View style={styles.chartHeader}>
             <MaterialCommunityIcons name="chart-line" size={20} color={colors.text} />
             <Text variant="titleMedium" style={styles.heading}>Diễn biến bệnh</Text>
@@ -132,38 +132,58 @@ export default function GardenDetailScreen({ navigation, route }) {
           </ScrollView>
           {progLoading ? (
             <ActivityIndicator style={{ marginTop: 12 }} color={colors.primary} />
-          ) : progression && progression.labels?.length > 1 ? (
-            <LineChart
-              data={{
-                labels: progression.labels.map((l) =>
-                  l.split("-").slice(1).join("/")
-                ),
-                datasets: [
-                  {
-                    data: progression.diseased_series,
-                    color: () => colors.error,
-                    strokeWidth: 2,
-                  },
-                ],
-                legend: ["Lượt phát hiện bệnh"],
-              }}
-              width={screenWidth}
-              height={180}
-              chartConfig={{
-                backgroundColor: colors.surface,
-                backgroundGradientFrom: colors.surface,
-                backgroundGradientTo: colors.surface,
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(239,68,68,${opacity})`,
-                labelColor: () => colors.textSecondary,
-                style: { borderRadius: 12 },
-                propsForDots: { r: "4", strokeWidth: "1", stroke: colors.error },
-              }}
-              style={styles.chart}
-              bezier
-              withInnerLines={false}
-              withOuterLines={false}
-            />
+          ) : progression && progression.labels?.length > 1 && chartContainerWidth > 0 ? (
+            (() => {
+              const rawLabels = progression.labels.map((l) => l.split("-").slice(1).join("/"));
+              const MIN_LABEL_W = 40;
+              const chartWidth = Math.max(chartContainerWidth, rawLabels.length * MIN_LABEL_W);
+              const needsScroll = chartWidth > chartContainerWidth;
+              const chart = (
+                <LineChart
+                  data={{
+                    labels: rawLabels,
+                    datasets: [
+                      {
+                        data: progression.diseased_series,
+                        color: () => colors.error,
+                        strokeWidth: 2,
+                      },
+                    ],
+                  }}
+                  width={chartWidth}
+                  height={180}
+                  chartConfig={{
+                    backgroundColor: colors.surface,
+                    backgroundGradientFrom: colors.surface,
+                    backgroundGradientTo: colors.surface,
+                    decimalPlaces: 0,
+                    paddingRight: 0,
+                    color: (opacity = 1) => `rgba(239,68,68,${opacity})`,
+                    labelColor: () => colors.textSecondary,
+                    style: { borderRadius: 12 },
+                    propsForDots: { r: "4", strokeWidth: "1", stroke: colors.error },
+                  }}
+                  style={styles.chart}
+                  bezier
+                  withInnerLines={false}
+                  withOuterLines={false}
+                  withYLabels={false}
+                />
+              );
+              return (
+                <>
+                  <View style={styles.legendRow}>
+                    <View style={styles.legendDot} />
+                    <Text variant="bodySmall" style={styles.legendText}>Lượt phát hiện bệnh</Text>
+                  </View>
+                  {needsScroll ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {chart}
+                    </ScrollView>
+                  ) : chart}
+                </>
+              );
+            })()
           ) : (
             <Text variant="bodySmall" style={styles.noChartText}>
               Chưa có dữ liệu trong kỳ này
@@ -190,7 +210,11 @@ export default function GardenDetailScreen({ navigation, route }) {
         const healthy = (det.disease_label || "").toLowerCase().includes("healthy");
         const statusColor = healthy ? colors.success : colors.error;
         return (
-          <View key={det.id} style={styles.detCard}>
+          <Pressable
+            key={det.id}
+            style={({ pressed }) => [styles.detCard, pressed && { opacity: 0.8 }]}
+            onPress={() => navigation.navigate("DetectionDetail", { detectionId: det.id })}
+          >
             <View style={[styles.detIndicator, { backgroundColor: statusColor }]} />
             <View style={styles.detContent}>
               <Text variant="titleSmall" style={[styles.disease, { color: statusColor }]}>
@@ -203,7 +227,8 @@ export default function GardenDetailScreen({ navigation, route }) {
                 {new Date(det.created_at).toLocaleString("vi-VN")}
               </Text>
             </View>
-          </View>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} style={{ alignSelf: "center", marginRight: 8 }} />
+          </Pressable>
         );
       })}
     </ScreenWrapper>
@@ -245,6 +270,9 @@ const styles = StyleSheet.create({
   },
   chartHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   periodRow: { marginBottom: 12 },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+  legendDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.error },
+  legendText: { color: colors.textSecondary },
   chart: { borderRadius: 12 },
   noChartText: { color: colors.textMuted, textAlign: "center", marginTop: 12, marginBottom: 4 },
 });

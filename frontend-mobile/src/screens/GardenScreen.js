@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
 import { ActivityIndicator, FAB, IconButton, Text } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -29,7 +29,7 @@ const healthStyles = StyleSheet.create({
 
 function GardenCard({ item, onPress, onEdit }) {
   return (
-    <View style={cardStyles.card}>
+    <Pressable style={({ pressed }) => [cardStyles.card, pressed && { opacity: 0.85 }]} onPress={onPress}>
       <View style={cardStyles.header}>
         <View style={cardStyles.iconWrap}>
           <MaterialCommunityIcons name="sprout" size={22} color={colors.primary} />
@@ -51,7 +51,7 @@ function GardenCard({ item, onPress, onEdit }) {
           <Text variant="bodySmall" style={cardStyles.statText}>{item.trees} cây</Text>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

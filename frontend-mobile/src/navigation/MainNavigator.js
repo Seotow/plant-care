@@ -64,6 +64,7 @@ function GardenStackScreen() {
       <GardenStack.Screen name="GardenList" component={GardenScreen} options={{ title: "Vườn của tôi" }} />
       <GardenStack.Screen name="GardenDetail" component={GardenDetailScreen} options={{ title: "Chi tiết vườn" }} />
       <GardenStack.Screen name="GardenForm" component={GardenFormScreen} options={{ title: "Vườn" }} />
+      <GardenStack.Screen name="DetectionDetail" component={DetectionDetailScreen} options={{ title: "Chi tiết kết quả" }} />
     </GardenStack.Navigator>
   );
 }
