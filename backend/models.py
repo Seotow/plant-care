@@ -80,6 +80,7 @@ class DiseaseKnowledge(Base):
     mo_ta = Column(Text, default="")
     nguyen_nhan = Column(Text, default="")
     xu_ly = Column(Text, default="[]")  # JSON array stored as text
+    disease_class_id = Column(Integer, ForeignKey("disease_classes.id"), nullable=True)
 
 
 class DiseaseClass(Base):
@@ -87,6 +88,10 @@ class DiseaseClass(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False)
     name_vi = Column(String(150), default="")
+    plant_name_vi = Column(String(150), default="")
+    disease_name_vi = Column(String(150), default="")
+    treatment = Column(Text, default="")
+    is_newly_approved = Column(Integer, default=0)
     is_builtin = Column(Integer, default=0)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
@@ -109,8 +114,11 @@ class DiseaseSubmission(Base):
     """Đề xuất bệnh từ người dùng — chờ admin duyệt trước khi vào hệ thống chính."""
     __tablename__ = "disease_submissions"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False)  # display name (auto-generated)
     name_vi = Column(String(150), default="")
+    plant_name_vi = Column(String(150), default="")   # tên cây tiếng Việt (bắt buộc)
+    disease_name_vi = Column(String(150), default="")  # tên bệnh tiếng Việt (tuỳ chọn)
+    treatment = Column(Text, default="")               # cách xử lý (admin điền khi duyệt)
     symptoms = Column(Text, default="")  # mô tả triệu chứng bằng text
     status = Column(String(20), default="pending")  # pending / approved / rejected
     reject_reason = Column(Text, default="")

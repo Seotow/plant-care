@@ -171,10 +171,11 @@ class ApiService {
     return this.request("/api/diseases/");
   }
 
-  async createDisease(name, nameVi, imageUris) {
+  async createDisease(plantNameVi, diseaseNameVi, treatment, imageUris) {
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("name_vi", nameVi);
+    formData.append("plant_name_vi", plantNameVi);
+    formData.append("disease_name_vi", diseaseNameVi);
+    formData.append("treatment", treatment);
 
     for (let i = 0; i < imageUris.length; i++) {
       const uri = imageUris[i];
@@ -213,10 +214,11 @@ class ApiService {
     return this.request(`/api/diseases/${id}`, { method: "DELETE" });
   }
 
-  updateDisease(id, name, nameVi) {
+  updateDisease(id, plantNameVi, diseaseNameVi, treatment) {
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("name_vi", nameVi);
+    formData.append("plant_name_vi", plantNameVi);
+    formData.append("disease_name_vi", diseaseNameVi);
+    formData.append("treatment", treatment);
     return this.request(`/api/diseases/${id}`, { method: "PATCH", body: formData });
   }
 
@@ -236,10 +238,10 @@ class ApiService {
   }
 
   // ── Disease submissions (UC13) ──
-  async submitDisease(name, nameVi, symptoms, imageUris) {
+  async submitDisease(plantNameVi, diseaseNameVi, symptoms, imageUris) {
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("name_vi", nameVi);
+    formData.append("plant_name_vi", plantNameVi);
+    formData.append("disease_name_vi", diseaseNameVi);
     formData.append("symptoms", symptoms);
     for (let i = 0; i < imageUris.length; i++) {
       const uri = imageUris[i];
@@ -265,8 +267,21 @@ class ApiService {
     return this.request(`/api/admin/submissions?status=${status}`);
   }
 
-  adminApproveSubmission(id) {
-    return this.request(`/api/admin/submissions/${id}/approve`, { method: "POST" });
+  adminApproveSubmission(id, { plant_name_vi = "", disease_name_vi = "", treatment = "" } = {}) {
+    const formData = new FormData();
+    formData.append("plant_name_vi", plant_name_vi);
+    formData.append("disease_name_vi", disease_name_vi);
+    formData.append("treatment", treatment);
+    return this.request(`/api/admin/submissions/${id}/approve`, { method: "POST", body: formData });
+  }
+
+  adminUpdateSubmission(id, { plant_name_vi = "", disease_name_vi = "", treatment = "", delete_image_ids = [] } = {}) {
+    const formData = new FormData();
+    formData.append("plant_name_vi", plant_name_vi);
+    formData.append("disease_name_vi", disease_name_vi);
+    formData.append("treatment", treatment);
+    formData.append("delete_image_ids", JSON.stringify(delete_image_ids));
+    return this.request(`/api/admin/submissions/${id}`, { method: "PATCH", body: formData });
   }
 
   adminRejectSubmission(id, reason = "") {

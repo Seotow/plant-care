@@ -8,8 +8,8 @@ import ScreenWrapper from "../components/ScreenWrapper";
 import { colors, shadows, spacing } from "../theme";
 
 export default function DiseaseSubmitScreen({ navigation }) {
-  const [name, setName] = useState("");
-  const [nameVi, setNameVi] = useState("");
+  const [plantNameVi, setPlantNameVi] = useState("");
+  const [diseaseNameVi, setDiseaseNameVi] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -35,8 +35,8 @@ export default function DiseaseSubmitScreen({ navigation }) {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập tên bệnh (tiếng Anh)");
+    if (!plantNameVi.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập tên cây");
       return;
     }
     if (!symptoms.trim()) {
@@ -50,7 +50,7 @@ export default function DiseaseSubmitScreen({ navigation }) {
 
     setSaving(true);
     try {
-      await api.submitDisease(name.trim(), nameVi.trim(), symptoms.trim(), images);
+      await api.submitDisease(plantNameVi.trim(), diseaseNameVi.trim(), symptoms.trim(), images);
       Alert.alert(
         "Đã gửi đề xuất",
         "Đề xuất của bạn đang chờ admin xem xét. Bạn có thể theo dõi trạng thái trong phần 'Đề xuất của tôi'.",
@@ -68,25 +68,25 @@ export default function DiseaseSubmitScreen({ navigation }) {
       <View style={styles.infoCard}>
         <MaterialCommunityIcons name="information-outline" size={20} color={colors.primary} />
         <Text variant="bodySmall" style={styles.infoText}>
-          Đề xuất bệnh mới sẽ được admin xem xét trước khi thêm vào hệ thống nhận diện. Ảnh mẫu phải rõ triệu chứng bệnh, tối thiểu 3 ảnh.
+          Đề xuất bệnh mới sẽ được admin xem xét trước khi thêm vào hệ thống nhận diện. Chỉ cần biết tên cây và mô tả triệu chứng, tên bệnh cụ thể là không bắt buộc. Cần tối thiểu 3 ảnh rõ triệu chứng.
         </Text>
       </View>
 
       <TextInput
-        label="Tên bệnh (tiếng Anh) *"
-        value={name}
-        onChangeText={setName}
+        label="Tên cây *"
+        value={plantNameVi}
+        onChangeText={setPlantNameVi}
         style={styles.input}
         mode="outlined"
-        placeholder="Ví dụ: Brown Spot"
+        placeholder="Ví dụ: Cà chua, Lúa, Ngô"
       />
       <TextInput
-        label="Tên bệnh (tiếng Việt)"
-        value={nameVi}
-        onChangeText={setNameVi}
+        label="Tên bệnh (nếu biết)"
+        value={diseaseNameVi}
+        onChangeText={setDiseaseNameVi}
         style={styles.input}
         mode="outlined"
-        placeholder="Ví dụ: Đốm nâu"
+        placeholder="Ví dụ: Đốm nâu, Cháy lá"
       />
       <TextInput
         label="Mô tả triệu chứng *"

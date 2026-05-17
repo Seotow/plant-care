@@ -218,7 +218,7 @@ export default function GardenDetailScreen({ navigation, route }) {
             <View style={[styles.detIndicator, { backgroundColor: statusColor }]} />
             <View style={styles.detContent}>
               <Text variant="titleSmall" style={[styles.disease, { color: statusColor }]}>
-                {formatLabel(det.disease_label)}
+                {det.disease_label_vi || formatLabel(det.disease_label)}
               </Text>
               <Text variant="bodySmall" style={styles.detMeta}>
                 Độ tin cậy: {(det.confidence * 100).toFixed(1)}%

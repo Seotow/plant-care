@@ -13,6 +13,11 @@ import { colors, shadows, spacing } from "../theme";
 
 function KnowledgeItem({ item, onPress }) {
   const hasInfo = Boolean(item.mo_ta || item.nguyen_nhan);
+  const hasTreatment = Boolean(
+    item.xu_ly && item.xu_ly !== "[]" && JSON.parse(item.xu_ly || "[]").some(Boolean)
+  );
+  const displayName = item.name_vi || item.label;
+
   return (
     <TouchableRipple onPress={() => onPress(item)} style={styles.card} borderless>
       <View style={styles.cardInner}>
@@ -24,11 +29,18 @@ function KnowledgeItem({ item, onPress }) {
           />
         </View>
         <View style={styles.info}>
-          <Text variant="titleSmall" style={styles.label} numberOfLines={1}>
-            {item.label}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <Text variant="titleSmall" style={styles.label} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {item.is_newly_approved && (
+              <View style={styles.newBadge}>
+                <Text style={styles.newBadgeText}>Mới</Text>
+              </View>
+            )}
+          </View>
           <Text variant="bodySmall" style={styles.preview} numberOfLines={1}>
-            {item.mo_ta ? item.mo_ta : "Chưa có mô tả"}
+            {item.mo_ta ? item.mo_ta : hasTreatment ? "Đã có hướng xử lý" : "Đang cập nhật..."}
           </Text>
         </View>
         <MaterialCommunityIcons
@@ -143,4 +155,6 @@ const styles = StyleSheet.create({
   label: { fontWeight: "700", color: colors.text },
   preview: { color: colors.textMuted, marginTop: 2 },
   empty: { textAlign: "center", color: colors.textMuted, marginTop: 40 },
+  newBadge: { backgroundColor: colors.primary, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  newBadgeText: { color: colors.onPrimary, fontSize: 10, fontWeight: "700" },
 });

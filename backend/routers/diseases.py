@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import User, DiseaseClass, DiseasePrototype, DiseaseSample
 from auth import get_current_user
+from utils.slug import make_disease_slug
 
 
 def _require_admin(user: User = Depends(get_current_user)) -> User:
@@ -38,6 +39,10 @@ def list_diseases(db: Session = Depends(get_db), user: User = Depends(get_curren
             "id": d.id,
             "name": d.name,
             "name_vi": d.name_vi,
+            "plant_name_vi": d.plant_name_vi or "",
+            "disease_name_vi": d.disease_name_vi or "",
+            "treatment": d.treatment or "",
+            "is_newly_approved": bool(d.is_newly_approved),
             "is_builtin": bool(d.is_builtin),
             "sample_count": d.prototype.sample_count if d.prototype else 0,
             "created_at": d.created_at.isoformat(),
@@ -49,8 +54,9 @@ def list_diseases(db: Session = Depends(get_db), user: User = Depends(get_curren
 @router.post("/")
 async def create_disease(
     request: Request,
-    name: str = Form(...),
-    name_vi: str = Form(""),
+    plant_name_vi: str = Form(...),
+    disease_name_vi: str = Form(""),
+    treatment: str = Form(""),
     files: list[UploadFile] = File(...),
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
@@ -65,17 +71,27 @@ async def create_disease(
             status_code=400,
             detail=f"Tối đa {MAX_SAMPLES} ảnh mẫu (nhận được {len(files)})",
         )
-
-    existing = db.query(DiseaseClass).filter(DiseaseClass.name == name).first()
-    if existing:
-        raise HTTPException(status_code=409, detail=f"Bệnh '{name}' đã tồn tại")
+    if not plant_name_vi.strip():
+        raise HTTPException(status_code=400, detail="Tên cây không được để trống")
 
     predictor = request.app.state.predictor
     if not hasattr(predictor, "compute_embedding"):
         raise HTTPException(status_code=501, detail="Embedding model chưa được tải")
 
+    name = make_disease_slug(db, plant_name_vi.strip(), disease_name_vi.strip())
+    pnv = plant_name_vi.strip()
+    dnv = disease_name_vi.strip()
+    name_vi = f"{pnv} — {dnv}" if dnv else pnv
+
     # Create disease class
-    disease = DiseaseClass(name=name, name_vi=name_vi or name, created_by=user.id)
+    disease = DiseaseClass(
+        name=name,
+        name_vi=name_vi,
+        plant_name_vi=pnv,
+        disease_name_vi=dnv,
+        treatment=treatment.strip(),
+        created_by=user.id,
+    )
     db.add(disease)
     db.commit()
     db.refresh(disease)
@@ -128,8 +144,10 @@ async def create_disease(
         "id": disease.id,
         "name": disease.name,
         "name_vi": disease.name_vi,
+        "plant_name_vi": disease.plant_name_vi,
+        "disease_name_vi": disease.disease_name_vi,
         "sample_count": len(embeddings),
-        "message": f"Đã thêm bệnh '{name}' với {len(embeddings)} ảnh mẫu",
+        "message": f"Đã thêm bệnh '{name_vi}' với {len(embeddings)} ảnh mẫu",
     }
 
 
@@ -208,8 +226,9 @@ async def add_samples(
 def update_disease(
     disease_id: int,
     request: Request,
-    name: str = Form(...),
-    name_vi: str = Form(""),
+    plant_name_vi: str = Form(...),
+    disease_name_vi: str = Form(""),
+    treatment: str = Form(""),
     user: User = Depends(_require_admin),
     db: Session = Depends(get_db),
 ):
@@ -218,23 +237,27 @@ def update_disease(
         raise HTTPException(status_code=404, detail="Không tìm thấy bệnh")
     if disease.is_builtin:
         raise HTTPException(status_code=403, detail="Không thể chỉnh sửa bệnh mặc định")
+    if not plant_name_vi.strip():
+        raise HTTPException(status_code=400, detail="Tên cây không được để trống")
 
-    conflict = (
-        db.query(DiseaseClass)
-        .filter(DiseaseClass.name == name, DiseaseClass.id != disease_id)
-        .first()
-    )
-    if conflict:
-        raise HTTPException(status_code=409, detail=f"Tên '{name}' đã được dùng bởi bệnh khác")
-
-    disease.name = name
-    disease.name_vi = name_vi or name
+    pnv = plant_name_vi.strip()
+    dnv = disease_name_vi.strip()
+    disease.plant_name_vi = pnv
+    disease.disease_name_vi = dnv
+    disease.treatment = treatment.strip()
+    disease.name_vi = f"{pnv} — {dnv}" if dnv else pnv
     db.commit()
 
     predictor = request.app.state.predictor
     predictor.reload_prototypes(db)
 
-    return {"id": disease.id, "name": disease.name, "name_vi": disease.name_vi}
+    return {
+        "id": disease.id,
+        "name": disease.name,
+        "name_vi": disease.name_vi,
+        "plant_name_vi": disease.plant_name_vi,
+        "disease_name_vi": disease.disease_name_vi,
+    }
 
 
 @router.delete("/{disease_id}")

@@ -9,19 +9,20 @@ import uuid
 import logging
 import cv2
 import numpy as np
+import json
 from datetime import datetime, timezone
 from pathlib import Path
-from fastapi import APIRouter, Depends, Form, Request, HTTPException
+from fastapi import APIRouter, Depends, File, Form, Request, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from database import get_db
-import json
 
 from models import (
-    User, DiseaseSubmission, DiseaseClass, DiseasePrototype, DiseaseSample,
-    DiseaseKnowledge,
+    User, DiseaseSubmission, DiseaseSubmissionSample, DiseaseClass, DiseasePrototype,
+    DiseaseSample, DiseaseKnowledge,
 )
 from auth import get_current_user
+from utils.slug import make_disease_slug
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,8 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 UPLOADS_ROOT = Path(__file__).resolve().parent.parent / "uploads"
 DISEASE_DIR = UPLOADS_ROOT / "diseases"
 DISEASE_DIR.mkdir(parents=True, exist_ok=True)
+SUBMISSION_DIR = UPLOADS_ROOT / "submissions"
+SUBMISSION_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ─── Dependency: kiểm tra quyền admin ───────────────────────────────────────
@@ -59,13 +62,18 @@ def admin_list_submissions(
         result.append({
             "id": s.id,
             "name": s.name,
-            "name_vi": s.name_vi,
+            "plant_name_vi": s.plant_name_vi or "",
+            "disease_name_vi": s.disease_name_vi or "",
+            "treatment": s.treatment or "",
             "symptoms": s.symptoms,
             "status": s.status,
             "reject_reason": s.reject_reason,
             "sample_count": len(s.samples),
-            "sample_images": [f"/uploads/{sp.image_path}" for sp in s.samples[:4]],
-            "submitted_by": submitter.username if submitter else "",
+            "sample_images": [
+                {"id": sp.id, "url": f"/uploads/{sp.image_path}"}
+                for sp in s.samples
+            ],
+            "submitter_username": submitter.username if submitter else "",
             "created_at": s.created_at.isoformat(),
         })
     return result
@@ -75,6 +83,9 @@ def admin_list_submissions(
 async def approve_submission(
     submission_id: int,
     request: Request,
+    plant_name_vi: str = Form(""),
+    disease_name_vi: str = Form(""),
+    treatment: str = Form(""),
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -84,26 +95,36 @@ async def approve_submission(
     if submission.status != "pending":
         raise HTTPException(status_code=400, detail="Đề xuất này đã được xử lý rồi")
 
-    # Kiểm tra bệnh trùng tên
-    existing = db.query(DiseaseClass).filter(DiseaseClass.name == submission.name).first()
-    if existing:
-        raise HTTPException(status_code=409, detail=f"Bệnh '{submission.name}' đã tồn tại trong hệ thống")
+    # Override fields if admin edited them in review dialog
+    pnv = plant_name_vi.strip() or submission.plant_name_vi or ""
+    dnv = disease_name_vi.strip() if plant_name_vi.strip() else (submission.disease_name_vi or "")
+    treat = treatment.strip() or submission.treatment or ""
+
+    if not pnv:
+        raise HTTPException(status_code=400, detail="Tên cây không được để trống")
 
     predictor = request.app.state.predictor
     if not hasattr(predictor, "compute_embedding"):
         raise HTTPException(status_code=501, detail="Embedding model chưa được tải")
 
+    name = make_disease_slug(db, pnv, dnv)
+    name_vi = f"{pnv} — {dnv}" if dnv else pnv
+
     # Tạo DiseaseClass
     disease = DiseaseClass(
-        name=submission.name,
-        name_vi=submission.name_vi,
+        name=name,
+        name_vi=name_vi,
+        plant_name_vi=pnv,
+        disease_name_vi=dnv,
+        treatment=treat,
+        is_newly_approved=1,
         created_by=submission.submitted_by,
     )
     db.add(disease)
     db.commit()
     db.refresh(disease)
 
-    # Tính embedding từ ảnh mẫu đề xuất → tạo DiseaseSample + DiseasePrototype
+    # Tính embedding từ ảnh mẫu đề xuất
     embeddings = []
     for sub_sample in submission.samples:
         img_path = UPLOADS_ROOT / sub_sample.image_path
@@ -139,16 +160,30 @@ async def approve_submission(
         sample_count=len(embeddings),
     ))
 
+    # Tự động tạo DiseaseKnowledge
+    xu_ly = json.dumps([treat], ensure_ascii=False) if treat else "[]"
+    db.add(DiseaseKnowledge(
+        label=name,
+        mo_ta="",
+        nguyen_nhan="",
+        xu_ly=xu_ly,
+        disease_class_id=disease.id,
+    ))
+
+    # Cập nhật submission
+    submission.plant_name_vi = pnv
+    submission.disease_name_vi = dnv
+    submission.treatment = treat
     submission.status = "approved"
     submission.reviewed_by = admin.id
     submission.reviewed_at = datetime.now(timezone.utc)
     db.commit()
 
     predictor.reload_prototypes(db)
-    logger.info("Admin %d duyệt submission %d → disease %d (%s)", admin.id, submission_id, disease.id, disease.name)
+    logger.info("Admin %d duyệt submission %d → disease %d (%s)", admin.id, submission_id, disease.id, name)
 
     return {
-        "message": f"Đã duyệt và thêm bệnh '{submission.name}' vào hệ thống",
+        "message": f"Đã duyệt và thêm bệnh '{name_vi}' vào hệ thống",
         "disease_id": disease.id,
         "sample_count": len(embeddings),
     }
@@ -177,6 +212,65 @@ def reject_submission(
     return {"message": f"Đã từ chối đề xuất '{submission.name}'"}
 
 
+@router.patch("/submissions/{submission_id}")
+async def admin_update_submission(
+    submission_id: int,
+    plant_name_vi: str = Form(""),
+    disease_name_vi: str = Form(""),
+    treatment: str = Form(""),
+    delete_image_ids: str = Form("[]"),
+    files: list[UploadFile] = File(default=[]),
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    submission = db.query(DiseaseSubmission).filter(DiseaseSubmission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Không tìm thấy đề xuất")
+    if submission.status != "pending":
+        raise HTTPException(status_code=400, detail="Chỉ có thể sửa đề xuất đang chờ duyệt")
+
+    if plant_name_vi.strip():
+        submission.plant_name_vi = plant_name_vi.strip()
+    submission.disease_name_vi = disease_name_vi.strip()
+    submission.treatment = treatment.strip()
+    pnv = submission.plant_name_vi or ""
+    dnv = submission.disease_name_vi or ""
+    submission.name = (f"{pnv} — {dnv}" if dnv else pnv)[:100]
+
+    # Xóa ảnh theo danh sách ID
+    try:
+        ids_to_delete = json.loads(delete_image_ids)
+    except Exception:
+        ids_to_delete = []
+
+    sub_upload_dir = SUBMISSION_DIR
+    for img_id in ids_to_delete:
+        sample = db.query(DiseaseSubmissionSample).filter(
+            DiseaseSubmissionSample.id == img_id,
+            DiseaseSubmissionSample.submission_id == submission_id,
+        ).first()
+        if sample:
+            (UPLOADS_ROOT / sample.image_path).unlink(missing_ok=True)
+            db.delete(sample)
+
+    # Thêm ảnh mới
+    for file in files:
+        contents = await file.read()
+        img_array = np.frombuffer(contents, np.uint8)
+        img_bgr = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        if img_bgr is None:
+            continue
+        filename = f"{uuid.uuid4().hex}.jpg"
+        cv2.imwrite(str(sub_upload_dir / filename), img_bgr)
+        db.add(DiseaseSubmissionSample(
+            submission_id=submission.id,
+            image_path=f"submissions/{filename}",
+        ))
+
+    db.commit()
+    return {"message": "Đã cập nhật đề xuất"}
+
+
 # ─── Thông tin admin ──────────────────────────────────────────────────────────
 
 @router.get("/me")
@@ -196,16 +290,22 @@ def admin_list_knowledge(
     if search:
         q = q.filter(DiseaseKnowledge.label.ilike(f"%{search}%"))
     entries = q.order_by(DiseaseKnowledge.label).all()
-    return [
-        {
+
+    result = []
+    for e in entries:
+        disease_class = None
+        if e.disease_class_id:
+            disease_class = db.query(DiseaseClass).filter(DiseaseClass.id == e.disease_class_id).first()
+        result.append({
             "id": e.id,
             "label": e.label,
+            "name_vi": disease_class.name_vi if disease_class else "",
+            "is_newly_approved": bool(disease_class.is_newly_approved) if disease_class else False,
             "mo_ta": e.mo_ta,
             "nguyen_nhan": e.nguyen_nhan,
             "xu_ly": e.xu_ly,
-        }
-        for e in entries
-    ]
+        })
+    return result
 
 
 @router.get("/knowledge/{knowledge_id}")

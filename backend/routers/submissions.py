@@ -30,29 +30,38 @@ MAX_SAMPLES = 50
 
 @router.post("/")
 async def submit_disease(
-    name: str = Form(...),
-    name_vi: str = Form(""),
+    plant_name_vi: str = Form(...),
+    disease_name_vi: str = Form(""),
     symptoms: str = Form(""),
     files: list[UploadFile] = File(...),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if not plant_name_vi.strip():
+        raise HTTPException(status_code=400, detail="Tên cây không được để trống")
     if len(files) < MIN_SAMPLES:
         raise HTTPException(status_code=400, detail=f"Cần ít nhất {MIN_SAMPLES} ảnh mẫu")
     if len(files) > MAX_SAMPLES:
         raise HTTPException(status_code=400, detail=f"Tối đa {MAX_SAMPLES} ảnh mẫu")
 
-    # Kiểm tra trùng tên đang chờ duyệt
+    pnv = plant_name_vi.strip()
+    dnv = disease_name_vi.strip()
+
+    # Kiểm tra trùng đề xuất đang chờ duyệt
     dup = db.query(DiseaseSubmission).filter(
-        DiseaseSubmission.name == name.strip(),
+        DiseaseSubmission.plant_name_vi == pnv,
+        DiseaseSubmission.disease_name_vi == dnv,
         DiseaseSubmission.status == "pending",
     ).first()
     if dup:
         raise HTTPException(status_code=409, detail="Đã có đề xuất bệnh này đang chờ duyệt")
 
+    name_display = f"{pnv} — {dnv}" if dnv else pnv
     submission = DiseaseSubmission(
-        name=name.strip(),
-        name_vi=(name_vi or name).strip(),
+        name=name_display[:100],
+        name_vi=name_display,
+        plant_name_vi=pnv,
+        disease_name_vi=dnv,
         symptoms=symptoms.strip(),
         submitted_by=user.id,
     )
@@ -81,12 +90,13 @@ async def submit_disease(
         raise HTTPException(status_code=400, detail="Không đủ ảnh hợp lệ (cần ít nhất 3 ảnh đọc được)")
 
     db.commit()
-    logger.info("Submission %d tạo bởi user %d: %s (%d ảnh)", submission.id, user.id, name, valid)
+    logger.info("Submission %d tạo bởi user %d: %s (%d ảnh)", submission.id, user.id, name_display, valid)
     return {
         "id": submission.id,
-        "name": submission.name,
+        "plant_name_vi": submission.plant_name_vi,
+        "disease_name_vi": submission.disease_name_vi,
         "status": submission.status,
-        "message": f"Đề xuất '{name}' đã được gửi, đang chờ admin duyệt",
+        "message": f"Đề xuất '{name_display}' đã được gửi, đang chờ admin duyệt",
     }
 
 
@@ -105,7 +115,8 @@ def list_my_submissions(
         {
             "id": s.id,
             "name": s.name,
-            "name_vi": s.name_vi,
+            "plant_name_vi": s.plant_name_vi or "",
+            "disease_name_vi": s.disease_name_vi or "",
             "symptoms": s.symptoms,
             "status": s.status,
             "reject_reason": s.reject_reason,
