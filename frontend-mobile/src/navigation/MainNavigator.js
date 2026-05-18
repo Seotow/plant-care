@@ -28,6 +28,7 @@ import DiseaseSubmitScreen from "../screens/DiseaseSubmitScreen";
 import AdminSubmissionsScreen from "../screens/AdminSubmissionsScreen";
 import AdminKnowledgeScreen from "../screens/AdminKnowledgeScreen";
 import AdminKnowledgeEditScreen from "../screens/AdminKnowledgeEditScreen";
+import KnowledgeDetailScreen from "../screens/KnowledgeDetailScreen";
 import DetectionDetailScreen from "../screens/DetectionDetailScreen";
 
 const AuthStack = createNativeStackNavigator();
@@ -98,6 +99,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="AdminSubmissions" component={AdminSubmissionsScreen} options={{ title: "Quản lý đề xuất" }} />
       <ProfileStack.Screen name="AdminKnowledge" component={AdminKnowledgeScreen} options={{ title: "Knowledge Base" }} />
       <ProfileStack.Screen name="AdminKnowledgeEdit" component={AdminKnowledgeEditScreen} options={{ title: "Chỉnh sửa bệnh" }} />
+      <ProfileStack.Screen name="KnowledgeDetail" component={KnowledgeDetailScreen} options={{ title: "Chi tiết bệnh" }} />
       <ProfileStack.Screen name="GradcamTest" component={GradcamTestScreen} options={{ title: "Test Grad-CAM" }} />
     </ProfileStack.Navigator>
   );

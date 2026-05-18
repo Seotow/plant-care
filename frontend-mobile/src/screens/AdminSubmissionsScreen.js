@@ -192,13 +192,7 @@ export default function AdminSubmissionsScreen() {
                       />
                     </Pressable>
                   ))}
-                  {s.sample_count > 5 && (
-                    <View style={styles.moreImgBadge}>
-                      <Text variant="labelSmall" style={{ color: colors.onPrimary }}>
-                        +{s.sample_count - 5}
-                      </Text>
-                    </View>
-                  )}
+
                 </ScrollView>
               )}
 
@@ -239,12 +233,14 @@ export default function AdminSubmissionsScreen() {
       <Portal>
         <Dialog visible={!!reviewDialog} onDismiss={() => setReviewDialog(null)}>
           <Dialog.Title>Xem xét & Duyệt</Dialog.Title>
-          <Dialog.ScrollArea style={{ maxHeight: 420 }}>
-            <ScrollView>
-              <View style={{ padding: 4 }}>
-                <Text variant="bodySmall" style={{ color: colors.textSecondary, marginBottom: 12 }}>
-                  Triệu chứng: {reviewDialog?.symptoms || "Chưa mô tả"}
-                </Text>
+          <Dialog.Content style={{ paddingBottom: 0 }}>
+            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                {reviewDialog?.symptoms ? (
+                  <View style={{ backgroundColor: colors.primarySurface, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text variant="labelSmall" style={{ color: colors.primary, fontWeight: "700", marginBottom: 4 }}>Triệu chứng</Text>
+                    <Text variant="bodySmall" style={{ color: colors.text }}>{reviewDialog.symptoms}</Text>
+                  </View>
+                ) : null}
                 {reviewDialog?.sample_images?.length > 0 && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                     {reviewDialog.sample_images.map((img) => (
@@ -304,9 +300,8 @@ export default function AdminSubmissionsScreen() {
                   placeholder="Hướng dẫn xử lý bệnh..."
                   style={{ marginBottom: 4 }}
                 />
-              </View>
             </ScrollView>
-          </Dialog.ScrollArea>
+          </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setReviewDialog(null)}>Hủy</Button>
             <Button

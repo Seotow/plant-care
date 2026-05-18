@@ -162,9 +162,10 @@ async def approve_submission(
 
     # Tự động tạo DiseaseKnowledge
     xu_ly = json.dumps([treat], ensure_ascii=False) if treat else "[]"
+    symptoms_text = submission.symptoms or ""
     db.add(DiseaseKnowledge(
         label=name,
-        mo_ta="",
+        mo_ta=symptoms_text,
         nguyen_nhan="",
         xu_ly=xu_ly,
         disease_class_id=disease.id,
@@ -296,6 +297,8 @@ def admin_list_knowledge(
         disease_class = None
         if e.disease_class_id:
             disease_class = db.query(DiseaseClass).filter(DiseaseClass.id == e.disease_class_id).first()
+        if not disease_class:
+            disease_class = db.query(DiseaseClass).filter(DiseaseClass.name == e.label).first()
         result.append({
             "id": e.id,
             "label": e.label,

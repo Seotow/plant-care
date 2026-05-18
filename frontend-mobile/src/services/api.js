@@ -171,10 +171,11 @@ class ApiService {
     return this.request("/api/diseases/");
   }
 
-  async createDisease(plantNameVi, diseaseNameVi, treatment, imageUris) {
+  async createDisease(plantNameVi, diseaseNameVi, symptoms, treatment, imageUris) {
     const formData = new FormData();
     formData.append("plant_name_vi", plantNameVi);
     formData.append("disease_name_vi", diseaseNameVi);
+    formData.append("symptoms", symptoms);
     formData.append("treatment", treatment);
 
     for (let i = 0; i < imageUris.length; i++) {
@@ -292,6 +293,12 @@ class ApiService {
 
   adminGetMe() {
     return this.request("/api/admin/me");
+  }
+
+  // ── Knowledge Base (public, read-only) ──
+  getKnowledge(search = "") {
+    const q = search ? `?search=${encodeURIComponent(search)}` : "";
+    return this.request(`/api/diseases/knowledge${q}`);
   }
 
   // ── Admin Knowledge Base ──

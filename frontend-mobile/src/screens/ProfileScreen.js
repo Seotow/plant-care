@@ -75,6 +75,12 @@ export default function ProfileScreen({ navigation }) {
           onPress={() => navigation.navigate("Tasks")}
         />
         <MenuItem
+          icon="book-open-outline"
+          title="Knowledge Base bệnh cây"
+          onPress={() => navigation.navigate("AdminKnowledge")}
+          color={colors.primary}
+        />
+        <MenuItem
           icon="virus-outline"
           title="Quản lý bệnh cây"
           onPress={() => navigation.navigate("Diseases")}
@@ -98,14 +104,6 @@ export default function ProfileScreen({ navigation }) {
             title="Quản lý đề xuất bệnh"
             onPress={() => navigation.navigate("AdminSubmissions")}
             color={colors.error}
-          />
-        )}
-        {isAdmin && (
-          <MenuItem
-            icon="book-edit-outline"
-            title="Chỉnh sửa knowledge base"
-            onPress={() => navigation.navigate("AdminKnowledge")}
-            color={colors.primary}
           />
         )}
       </View>

@@ -9,9 +9,10 @@ import {
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import { colors, shadows, spacing } from "../theme";
 
-function KnowledgeItem({ item, onPress }) {
+function KnowledgeItem({ item, onPress, readOnly }) {
   const hasInfo = Boolean(item.mo_ta || item.nguyen_nhan);
   const hasTreatment = Boolean(
     item.xu_ly && item.xu_ly !== "[]" && JSON.parse(item.xu_ly || "[]").some(Boolean)
@@ -44,7 +45,7 @@ function KnowledgeItem({ item, onPress }) {
           </Text>
         </View>
         <MaterialCommunityIcons
-          name="chevron-right"
+          name={readOnly ? "information-outline" : "chevron-right"}
           size={20}
           color={colors.textMuted}
         />
@@ -54,6 +55,8 @@ function KnowledgeItem({ item, onPress }) {
 }
 
 export default function AdminKnowledgeScreen({ navigation }) {
+  const { user } = useAuth();
+  const isAdmin = Boolean(user?.is_admin);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -61,15 +64,15 @@ export default function AdminKnowledgeScreen({ navigation }) {
 
   const loadKnowledge = useCallback(() => {
     setLoading(true);
-    api
-      .adminGetKnowledge()
+    const fetcher = isAdmin ? api.adminGetKnowledge() : api.getKnowledge();
+    fetcher
       .then((data) => {
         setEntries(data);
         setFiltered(data);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAdmin]);
 
   useFocusEffect(loadKnowledge);
 
@@ -79,12 +82,16 @@ export default function AdminKnowledgeScreen({ navigation }) {
       setFiltered(entries);
     } else {
       const q = text.toLowerCase();
-      setFiltered(entries.filter((e) => e.label.toLowerCase().includes(q)));
+      setFiltered(entries.filter((e) => (e.name_vi || e.label).toLowerCase().includes(q)));
     }
   };
 
   const handlePress = (item) => {
-    navigation.navigate("AdminKnowledgeEdit", { knowledgeId: item.id, label: item.label });
+    if (isAdmin) {
+      navigation.navigate("AdminKnowledgeEdit", { knowledgeId: item.id, label: item.name_vi || item.label });
+    } else {
+      navigation.navigate("KnowledgeDetail", { item });
+    }
   };
 
   if (loading) {
@@ -108,7 +115,7 @@ export default function AdminKnowledgeScreen({ navigation }) {
         data={filtered}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <KnowledgeItem item={item} onPress={handlePress} />
+        <KnowledgeItem item={item} onPress={handlePress} readOnly={!isAdmin} />
         )}
         contentContainerStyle={styles.list}
         ListEmptyComponent={

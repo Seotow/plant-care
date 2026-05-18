@@ -3,6 +3,7 @@
 POST / và POST /{id}/samples chỉ dành cho admin.
 Người dùng thường phải dùng /api/submissions để đề xuất bệnh.
 """
+import json
 import uuid
 import logging
 import cv2
@@ -11,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, UploadFile, Request, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User, DiseaseClass, DiseasePrototype, DiseaseSample
+from models import User, DiseaseClass, DiseaseKnowledge, DiseasePrototype, DiseaseSample
 from auth import get_current_user
 from utils.slug import make_disease_slug
 
@@ -51,11 +52,43 @@ def list_diseases(db: Session = Depends(get_db), user: User = Depends(get_curren
     ]
 
 
+@router.get("/knowledge")
+def list_knowledge_public(
+    search: str = "",
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Public knowledge list — readable by any authenticated user."""
+    q = db.query(DiseaseKnowledge)
+    if search:
+        q = q.filter(DiseaseKnowledge.label.ilike(f"%{search}%"))
+    entries = q.order_by(DiseaseKnowledge.label).all()
+
+    result = []
+    for e in entries:
+        disease_class = None
+        if e.disease_class_id:
+            disease_class = db.query(DiseaseClass).filter(DiseaseClass.id == e.disease_class_id).first()
+        if not disease_class:
+            disease_class = db.query(DiseaseClass).filter(DiseaseClass.name == e.label).first()
+        result.append({
+            "id": e.id,
+            "label": e.label,
+            "name_vi": disease_class.name_vi if disease_class else "",
+            "is_newly_approved": bool(disease_class.is_newly_approved) if disease_class else False,
+            "mo_ta": e.mo_ta,
+            "nguyen_nhan": e.nguyen_nhan,
+            "xu_ly": e.xu_ly,
+        })
+    return result
+
+
 @router.post("/")
 async def create_disease(
     request: Request,
     plant_name_vi: str = Form(...),
     disease_name_vi: str = Form(""),
+    symptoms: str = Form(""),
     treatment: str = Form(""),
     files: list[UploadFile] = File(...),
     user: User = Depends(_require_admin),
@@ -90,6 +123,7 @@ async def create_disease(
         plant_name_vi=pnv,
         disease_name_vi=dnv,
         treatment=treatment.strip(),
+        is_newly_approved=1,
         created_by=user.id,
     )
     db.add(disease)
@@ -135,6 +169,18 @@ async def create_disease(
         sample_count=len(embeddings),
     )
     db.add(prototype)
+    db.commit()
+
+    # Auto-create DiseaseKnowledge entry
+    treat_str = treatment.strip()
+    xu_ly = json.dumps([treat_str], ensure_ascii=False) if treat_str else "[]"
+    db.add(DiseaseKnowledge(
+        label=name,
+        mo_ta=symptoms.strip(),
+        nguyen_nhan="",
+        xu_ly=xu_ly,
+        disease_class_id=disease.id,
+    ))
     db.commit()
 
     # Reload predictor prototypes
