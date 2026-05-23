@@ -1,4 +1,4 @@
-"""One-time DB migration — add new columns to existing tables.
+"""One-time DB migration - add new columns to existing tables.
 
 Run:  python migrate.py
 """

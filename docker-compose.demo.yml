@@ -1,4 +1,4 @@
-# docker-compose.demo.yml — Production-like stack for local demo
+# docker-compose.demo.yml - Production-like stack for local demo
 # Dùng lệnh: docker compose -f docker-compose.demo.yml up --build
 #
 # Truy cập:
@@ -47,7 +47,7 @@ services:
 
   nginx:
     build:
-      context: .                        # root — để Dockerfile copy cả frontend-mobile/
+      context: .                        # root - để Dockerfile copy cả frontend-mobile/
       dockerfile: docker/nginx/Dockerfile
     ports:
       - "80:80"

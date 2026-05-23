@@ -15,7 +15,7 @@ try {
 } catch (_) {}
 
 function formatLabel(label) {
-  return label.replace(/___/g, " — ").replace(/_/g, " ");
+  return label.replace(/___/g, " - ").replace(/_/g, " ");
 }
 
 function InfoRow({ icon, label, value }) {

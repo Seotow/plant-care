@@ -58,7 +58,7 @@ def list_knowledge_public(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Public knowledge list — readable by any authenticated user."""
+    """Public knowledge list - readable by any authenticated user."""
     q = db.query(DiseaseKnowledge)
     if search:
         q = q.filter(DiseaseKnowledge.label.ilike(f"%{search}%"))
@@ -114,7 +114,7 @@ async def create_disease(
     name = make_disease_slug(db, plant_name_vi.strip(), disease_name_vi.strip())
     pnv = plant_name_vi.strip()
     dnv = disease_name_vi.strip()
-    name_vi = f"{pnv} — {dnv}" if dnv else pnv
+    name_vi = f"{pnv} - {dnv}" if dnv else pnv
 
     # Create disease class
     disease = DiseaseClass(
@@ -171,16 +171,22 @@ async def create_disease(
     db.add(prototype)
     db.commit()
 
-    # Auto-create DiseaseKnowledge entry
+    # Upsert DiseaseKnowledge - reuse existing row if label already exists
     treat_str = treatment.strip()
     xu_ly = json.dumps([treat_str], ensure_ascii=False) if treat_str else "[]"
-    db.add(DiseaseKnowledge(
-        label=name,
-        mo_ta=symptoms.strip(),
-        nguyen_nhan="",
-        xu_ly=xu_ly,
-        disease_class_id=disease.id,
-    ))
+    kb = db.query(DiseaseKnowledge).filter(DiseaseKnowledge.label == name).first()
+    if kb:
+        kb.mo_ta = symptoms.strip()
+        kb.xu_ly = xu_ly
+        kb.disease_class_id = disease.id
+    else:
+        db.add(DiseaseKnowledge(
+            label=name,
+            mo_ta=symptoms.strip(),
+            nguyen_nhan="",
+            xu_ly=xu_ly,
+            disease_class_id=disease.id,
+        ))
     db.commit()
 
     # Reload predictor prototypes
@@ -291,7 +297,7 @@ def update_disease(
     disease.plant_name_vi = pnv
     disease.disease_name_vi = dnv
     disease.treatment = treatment.strip()
-    disease.name_vi = f"{pnv} — {dnv}" if dnv else pnv
+    disease.name_vi = f"{pnv} - {dnv}" if dnv else pnv
     db.commit()
 
     predictor = request.app.state.predictor
@@ -321,6 +327,11 @@ def delete_disease(
 
     name = disease.name
     image_paths = [s.image_path for s in disease.samples]
+
+    # Delete linked DiseaseKnowledge entry so its label is freed for reuse
+    kb = db.query(DiseaseKnowledge).filter(DiseaseKnowledge.disease_class_id == disease_id).first()
+    if kb:
+        db.delete(kb)
 
     db.delete(disease)
     db.commit()

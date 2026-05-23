@@ -8,7 +8,7 @@ import useResponsive from "../hooks/useResponsive";
 import { colors, shadows, spacing } from "../theme";
 
 function formatLabel(label) {
-  return label.replace(/___/g, " — ").replace(/_/g, " ");
+  return label.replace(/___/g, " - ").replace(/_/g, " ");
 }
 
 function isHealthy(label) {

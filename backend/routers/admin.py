@@ -108,7 +108,7 @@ async def approve_submission(
         raise HTTPException(status_code=501, detail="Embedding model chưa được tải")
 
     name = make_disease_slug(db, pnv, dnv)
-    name_vi = f"{pnv} — {dnv}" if dnv else pnv
+    name_vi = f"{pnv} - {dnv}" if dnv else pnv
 
     # Tạo DiseaseClass
     disease = DiseaseClass(
@@ -236,7 +236,7 @@ async def admin_update_submission(
     submission.treatment = treatment.strip()
     pnv = submission.plant_name_vi or ""
     dnv = submission.disease_name_vi or ""
-    submission.name = (f"{pnv} — {dnv}" if dnv else pnv)[:100]
+    submission.name = (f"{pnv} - {dnv}" if dnv else pnv)[:100]
 
     # Xóa ảnh theo danh sách ID
     try:

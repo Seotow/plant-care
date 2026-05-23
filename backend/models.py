@@ -111,7 +111,7 @@ class DiseasePrototype(Base):
 
 
 class DiseaseSubmission(Base):
-    """Đề xuất bệnh từ người dùng — chờ admin duyệt trước khi vào hệ thống chính."""
+    """Đề xuất bệnh từ người dùng - chờ admin duyệt trước khi vào hệ thống chính."""
     __tablename__ = "disease_submissions"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)  # display name (auto-generated)

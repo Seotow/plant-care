@@ -48,7 +48,7 @@ const bannerStyles = StyleSheet.create({
 });
 
 function DetectionItem({ item }) {
-  const label = item.disease_vi || item.disease.replace(/___/g, " — ").replace(/_/g, " ");
+  const label = item.disease_vi || item.disease.replace(/___/g, " - ").replace(/_/g, " ");
   const healthy = item.disease.toLowerCase().includes("healthy") || (item.disease_vi || "").includes("Khỏe mạnh");
   const color = healthy ? colors.success : colors.error;
 

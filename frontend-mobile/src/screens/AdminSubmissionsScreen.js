@@ -154,7 +154,7 @@ export default function AdminSubmissionsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text variant="titleMedium" style={styles.diseaseName}>
                     {s.plant_name_vi || s.name}
-                    {s.disease_name_vi ? ` — ${s.disease_name_vi}` : ""}
+                    {s.disease_name_vi ? ` - ${s.disease_name_vi}` : ""}
                   </Text>
                   <Text variant="bodySmall" style={styles.meta}>
                     Người đề xuất: {s.submitter_username} · {new Date(s.created_at).toLocaleDateString("vi-VN")}

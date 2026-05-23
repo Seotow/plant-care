@@ -19,44 +19,44 @@ BASE_DIR = Path(__file__).resolve().parent.parent  # plant-care/
 MODEL_DIR = Path(os.environ.get("MODEL_DIR", str(BASE_DIR / "models")))
 
 LABEL_VI = {
-    "Apple___Apple_scab": "Táo — Ghẻ táo",
-    "Apple___Black_rot": "Táo — Thối đen",
-    "Apple___Cedar_apple_rust": "Táo — Rỉ sắt tuyết tùng",
-    "Apple___healthy": "Táo — Khỏe mạnh",
-    "Blueberry___healthy": "Việt quất — Khỏe mạnh",
-    "Cherry_(including_sour)___Powdery_mildew": "Anh đào — Phấn trắng",
-    "Cherry_(including_sour)___healthy": "Anh đào — Khỏe mạnh",
-    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": "Ngô — Đốm lá xám",
-    "Corn_(maize)___Common_rust_": "Ngô — Rỉ sắt",
-    "Corn_(maize)___Northern_Leaf_Blight": "Ngô — Cháy lá phía bắc",
-    "Corn_(maize)___healthy": "Ngô — Khỏe mạnh",
-    "Grape___Black_rot": "Nho — Thối đen",
-    "Grape___Esca_(Black_Measles)": "Nho — Bệnh Esca",
-    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": "Nho — Cháy lá",
-    "Grape___healthy": "Nho — Khỏe mạnh",
-    "Orange___Haunglongbing_(Citrus_greening)": "Cam — Vàng lá gân xanh",
-    "Peach___Bacterial_spot": "Đào — Đốm vi khuẩn",
-    "Peach___healthy": "Đào — Khỏe mạnh",
-    "Pepper,_bell___Bacterial_spot": "Ớt chuông — Đốm vi khuẩn",
-    "Pepper,_bell___healthy": "Ớt chuông — Khỏe mạnh",
-    "Potato___Early_blight": "Khoai tây — Cháy sớm",
-    "Potato___Late_blight": "Khoai tây — Mốc sương",
-    "Potato___healthy": "Khoai tây — Khỏe mạnh",
-    "Raspberry___healthy": "Mâm xôi — Khỏe mạnh",
-    "Soybean___healthy": "Đậu nành — Khỏe mạnh",
-    "Squash___Powdery_mildew": "Bí — Phấn trắng",
-    "Strawberry___Leaf_scorch": "Dâu tây — Cháy lá",
-    "Strawberry___healthy": "Dâu tây — Khỏe mạnh",
-    "Tomato___Bacterial_spot": "Cà chua — Đốm vi khuẩn",
-    "Tomato___Early_blight": "Cà chua — Cháy sớm",
-    "Tomato___Late_blight": "Cà chua — Mốc sương",
-    "Tomato___Leaf_Mold": "Cà chua — Mốc lá",
-    "Tomato___Septoria_leaf_spot": "Cà chua — Đốm lá Septoria",
-    "Tomato___Spider_mites Two-spotted_spider_mite": "Cà chua — Nhện đỏ hai chấm",
-    "Tomato___Target_Spot": "Cà chua — Đốm vòng",
-    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": "Cà chua — Virus xoăn vàng lá",
-    "Tomato___Tomato_mosaic_virus": "Cà chua — Virus khảm",
-    "Tomato___healthy": "Cà chua — Khỏe mạnh",
+    "Apple___Apple_scab": "Táo - Ghẻ táo",
+    "Apple___Black_rot": "Táo - Thối đen",
+    "Apple___Cedar_apple_rust": "Táo - Rỉ sắt tuyết tùng",
+    "Apple___healthy": "Táo - Khỏe mạnh",
+    "Blueberry___healthy": "Việt quất - Khỏe mạnh",
+    "Cherry_(including_sour)___Powdery_mildew": "Anh đào - Phấn trắng",
+    "Cherry_(including_sour)___healthy": "Anh đào - Khỏe mạnh",
+    "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot": "Ngô - Đốm lá xám",
+    "Corn_(maize)___Common_rust_": "Ngô - Rỉ sắt",
+    "Corn_(maize)___Northern_Leaf_Blight": "Ngô - Cháy lá phía bắc",
+    "Corn_(maize)___healthy": "Ngô - Khỏe mạnh",
+    "Grape___Black_rot": "Nho - Thối đen",
+    "Grape___Esca_(Black_Measles)": "Nho - Bệnh Esca",
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": "Nho - Cháy lá",
+    "Grape___healthy": "Nho - Khỏe mạnh",
+    "Orange___Haunglongbing_(Citrus_greening)": "Cam - Vàng lá gân xanh",
+    "Peach___Bacterial_spot": "Đào - Đốm vi khuẩn",
+    "Peach___healthy": "Đào - Khỏe mạnh",
+    "Pepper,_bell___Bacterial_spot": "Ớt chuông - Đốm vi khuẩn",
+    "Pepper,_bell___healthy": "Ớt chuông - Khỏe mạnh",
+    "Potato___Early_blight": "Khoai tây - Cháy sớm",
+    "Potato___Late_blight": "Khoai tây - Mốc sương",
+    "Potato___healthy": "Khoai tây - Khỏe mạnh",
+    "Raspberry___healthy": "Mâm xôi - Khỏe mạnh",
+    "Soybean___healthy": "Đậu nành - Khỏe mạnh",
+    "Squash___Powdery_mildew": "Bí - Phấn trắng",
+    "Strawberry___Leaf_scorch": "Dâu tây - Cháy lá",
+    "Strawberry___healthy": "Dâu tây - Khỏe mạnh",
+    "Tomato___Bacterial_spot": "Cà chua - Đốm vi khuẩn",
+    "Tomato___Early_blight": "Cà chua - Cháy sớm",
+    "Tomato___Late_blight": "Cà chua - Mốc sương",
+    "Tomato___Leaf_Mold": "Cà chua - Mốc lá",
+    "Tomato___Septoria_leaf_spot": "Cà chua - Đốm lá Septoria",
+    "Tomato___Spider_mites Two-spotted_spider_mite": "Cà chua - Nhện đỏ hai chấm",
+    "Tomato___Target_Spot": "Cà chua - Đốm vòng",
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": "Cà chua - Virus xoăn vàng lá",
+    "Tomato___Tomato_mosaic_virus": "Cà chua - Virus khảm",
+    "Tomato___healthy": "Cà chua - Khỏe mạnh",
 }
 
 
@@ -83,7 +83,7 @@ def _gradcam_pp_from_seq(feat, grad) -> np.ndarray:
     global_sum = (feat * grad3).sum(dim=1, keepdim=True)     # (1, 1, C) sum over spatial
     alpha = grad2 / (2.0 * grad2 + global_sum + 1e-7)       # (1, seq_len, C)
 
-    # Channel weights: Σ_j alpha_j · relu(grad_j)  — sum over spatial positions
+    # Channel weights: Σ_j alpha_j · relu(grad_j)  - sum over spatial positions
     weights = (alpha * F.relu(grad)).sum(dim=1, keepdim=True)  # (1, 1, C)
 
     cam = (feat * weights).sum(dim=-1)  # (1, seq_len)
@@ -111,7 +111,7 @@ def _layercam_from_seq(feat_list, grad_list) -> np.ndarray:
     disease spots scattered across the leaf.
 
     Fuses Stage 0 (56×56, fine) + Stage 1 (28×28, semantic) at full resolution.
-    Stage 0 weighting 60% is critical — 4× more spatial detail than Stage 2.
+    Stage 0 weighting 60% is critical - 4× more spatial detail than Stage 2.
 
     Reference: Jiang et al., 'LayerCAM: Exploring Hierarchical Class Activation
     Maps for Localization', IEEE TIP 2021.
@@ -124,7 +124,7 @@ def _layercam_from_seq(feat_list, grad_list) -> np.ndarray:
     stage_weights = [0.60, 0.40]  # stage0 (fine) vs stage1 (semantic)
 
     for feat, grad in zip(feat_list, grad_list):
-        # LayerCAM: relu(grad) ⊙ feat — preserves per-position gradient
+        # LayerCAM: relu(grad) ⊙ feat - preserves per-position gradient
         cam = F.relu(grad) * feat        # (1, seq_len, C)
         cam = cam.sum(dim=-1)            # (1, seq_len)
         cam = F.relu(cam)
@@ -174,7 +174,7 @@ def _leaf_foreground_mask(img_bgr: np.ndarray) -> np.ndarray:
     # Broad mask: exclude near-black and near-white/grey uniform backgrounds
     raw = ((V_ch > 18) & (V_ch < 250) & (S_ch > 8)).astype(np.uint8)
 
-    # Keep the largest connected component — this should be the leaf
+    # Keep the largest connected component - this should be the leaf
     n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(raw, connectivity=8)
     if n_labels > 1:
         # stats[0] = background; find largest non-background component
@@ -199,7 +199,7 @@ def _color_anomaly_map(img_bgr: np.ndarray) -> tuple:
 
     Directly detects pixels with disease-typical colors in HSV space:
       - Brown / necrotic lesions (H 0-20° or 155-179°)
-      - Dark necrosis — ADAPTIVE threshold based on median leaf brightness
+      - Dark necrosis - ADAPTIVE threshold based on median leaf brightness
         (avoids flagging the whole leaf when it is naturally dark-colored)
       - Yellow patches (H 20-38°, S > 50, V > 80)
       - White powder / mildew (V > 210, S < 40)
@@ -208,7 +208,7 @@ def _color_anomaly_map(img_bgr: np.ndarray) -> tuple:
     Followed by morphological cleanup (open → close → dilate) and Gaussian
     smoothing for soft spot boundaries.
 
-    Returns (anomaly_map, leaf_mask) — both float32 [0, 1] same size as img_bgr.
+    Returns (anomaly_map, leaf_mask) - both float32 [0, 1] same size as img_bgr.
     """
     H_img, W_img = img_bgr.shape[:2]
 
@@ -296,7 +296,7 @@ def _build_overlay(img_bgr: np.ndarray, cam_np: np.ndarray, label: str = "") -> 
       1. Upsample CAM to full image size (LANCZOS4)
       2. Compute _leaf_foreground_mask → zero CAM outside the actual leaf
          (prevents LayerCAM activations in the 5% background padding)
-      3. Compute color anomaly map (adaptive HSV — handles dark-leaved plants)
+      3. Compute color anomaly map (adaptive HSV - handles dark-leaved plants)
       4. Fusion:
            - color_mean > 0.05: geometric mean (both signals must agree)
            - else: trust CAM only (subtle disease, no strong color change)
@@ -307,7 +307,7 @@ def _build_overlay(img_bgr: np.ndarray, cam_np: np.ndarray, label: str = "") -> 
     cam_resized = cv2.resize(cam_np, (W, H), interpolation=cv2.INTER_LANCZOS4)
     cam_resized = np.clip(cam_resized, 0.0, 1.0)
 
-    # ── Step 0: Edge suppression — zero out 12% border to exclude hands/foreign objects ──
+    # ── Step 0: Edge suppression - zero out 12% border to exclude hands/foreign objects ──
     # Cosine ramp: full activation at 12% inward, fades to 0 at the pixel edge
     BORDER = 0.12
     ys = np.linspace(0.0, 1.0, H, dtype=np.float32)
@@ -315,14 +315,14 @@ def _build_overlay(img_bgr: np.ndarray, cam_np: np.ndarray, label: str = "") -> 
     ry = np.clip(np.minimum(ys, 1.0 - ys) / BORDER, 0.0, 1.0)
     rx = np.clip(np.minimum(xs, 1.0 - xs) / BORDER, 0.0, 1.0)
     edge_mask = (0.5 - 0.5 * np.cos(np.pi * np.outer(ry, rx))).astype(np.float32)
-    # outer product gives a hard corner — smooth it with the minimum
+    # outer product gives a hard corner - smooth it with the minimum
     ry2d = ry[:, np.newaxis] * np.ones((1, W), dtype=np.float32)
     rx2d = np.ones((H, 1), dtype=np.float32) * rx[np.newaxis, :]
     rmin = np.minimum(ry2d, rx2d)
     edge_mask = (0.5 - 0.5 * np.cos(np.pi * rmin)).astype(np.float32)
     cam_resized = cam_resized * edge_mask
 
-    # ── Step 1: Hard leaf mask — zero out background pixels ──
+    # ── Step 1: Hard leaf mask - zero out background pixels ──
     fg_mask = _leaf_foreground_mask(img_bgr)
     cam_resized = cam_resized * fg_mask
 
@@ -469,9 +469,9 @@ class PlantDiseasePredictor:
 
         Strategy (best spatial accuracy first):
         1. LayerCAM on classifier (swin_classifier.pth) at Stage 0 (56×56) +
-           Stage 1 (28×28) fused — highest resolution, class-aware gradients,
+           Stage 1 (28×28) fused - highest resolution, class-aware gradients,
            combined with color-anomaly detection (HSV).
-        2. LayerCAM on embedding model — fallback when classifier not available.
+        2. LayerCAM on embedding model - fallback when classifier not available.
 
         Returns BGR overlay image, or None on failure.
         """
@@ -554,7 +554,7 @@ class PlantDiseasePredictor:
             cam_np = _layercam_from_seq(feat_list, grad_list)
             return _build_overlay(img_bgr, cam_np, label)
         except Exception as e:
-            print(f"[LayerCAM Classifier] {e} — GradCAM++ fallback")
+            print(f"[LayerCAM Classifier] {e} - GradCAM++ fallback")
             try:
                 return self._classifier_gradcam(img_bgr, tensor, target_class_idx)
             except Exception:
@@ -564,7 +564,7 @@ class PlantDiseasePredictor:
                 h.remove()
 
     def _embedding_layercam(self, img_bgr, tensor, label="") -> np.ndarray:
-        """LayerCAM on SwinEmbedding — hooks Stage 0 + Stage 1."""
+        """LayerCAM on SwinEmbedding - hooks Stage 0 + Stage 1."""
         s0_feat, s0_grad = {}, {}
         s1_feat, s1_grad = {}, {}
 
@@ -618,7 +618,7 @@ class PlantDiseasePredictor:
                 h.remove()
 
     def _embedding_gradcam_pp(self, img_bgr, tensor, target_class_idx=None) -> np.ndarray:
-        """GradCAM++ on SwinEmbedding — hooks stage2 last block (14×14). Kept as fallback."""
+        """GradCAM++ on SwinEmbedding - hooks stage2 last block (14×14). Kept as fallback."""
         features_store = {}
         gradients_store = {}
 
@@ -664,7 +664,7 @@ class PlantDiseasePredictor:
     # ── Old Swin Classifier (38-class, lazy-loaded) ──
 
     def _load_classifier(self):
-        """Load swin_classifier.pth on first use — fully offline, no HF Hub calls."""
+        """Load swin_classifier.pth on first use - fully offline, no HF Hub calls."""
         if hasattr(self, "_classifier"):
             return
         clf_path = MODEL_DIR / "swin_classifier.pth"
@@ -675,7 +675,7 @@ class PlantDiseasePredictor:
         self._clf_class_names = ckpt["class_names"]
         num_labels = ckpt.get("num_labels", len(self._clf_class_names))
 
-        # Load từ config local — không cần internet
+        # Load từ config local - không cần internet
         local_config_dir = MODEL_DIR / "swin_config_local"
         if local_config_dir.exists():
             config = SwinConfig.from_pretrained(str(local_config_dir))
@@ -722,7 +722,7 @@ class PlantDiseasePredictor:
         return {"predictions": predictions, "gradcam_overlay": overlay}
 
     def _classifier_gradcam(self, img_bgr, tensor, target_class_idx):
-        """GradCAM++ on the 38-class classifier — hooks stage2 last block."""
+        """GradCAM++ on the 38-class classifier - hooks stage2 last block."""
         features_store = {}
         gradients_store = {}
 
@@ -791,7 +791,7 @@ class PlantDiseasePredictor:
         top_species = _extract_species(top_label)
 
         # Co-disease detection: same species, different disease, within 85% of top-1 similarity.
-        # Signals that the crop embedding lies between two disease clusters — likely co-infection.
+        # Signals that the crop embedding lies between two disease clusters - likely co-infection.
         CO_DISEASE_RATIO = 0.85
         co_diseases = []
         if "healthy" not in top_label.lower() and top_sim > 0:

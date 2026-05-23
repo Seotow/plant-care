@@ -145,7 +145,7 @@ async def test_gradcam(
     mode: str = Form("classifier"),
     user: User = Depends(get_current_user),
 ):
-    """YOLO detect + Grad-CAM test — no DB write.
+    """YOLO detect + Grad-CAM test - no DB write.
 
     mode=classifier: old 38-class SwinForImageClassification + Grad-CAM
     mode=embedding:  current SwinEmbedding + Grad-CAM (prototype-based)

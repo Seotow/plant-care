@@ -1,5 +1,5 @@
 /**
- * DetectionDetailScreen — UC09: Xem chi tiết kết quả nhận diện cũ
+ * DetectionDetailScreen - UC09: Xem chi tiết kết quả nhận diện cũ
  * Hiện thị ảnh, nhãn bệnh, độ tin cậy và thông tin điều trị (disease_info).
  */
 import React, { useEffect, useState } from "react";
@@ -11,7 +11,7 @@ import ScreenWrapper from "../components/ScreenWrapper";
 import { colors, shadows, spacing } from "../theme";
 
 function formatLabel(label) {
-  return (label || "").replace(/___/g, " — ").replace(/_/g, " ");
+  return (label || "").replace(/___/g, " - ").replace(/_/g, " ");
 }
 
 function InfoSection({ icon, title, content }) {

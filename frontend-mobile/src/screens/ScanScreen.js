@@ -159,7 +159,7 @@ export default function ScanScreen({ navigation, route }) {
           {gardens.map((g) => (
             <Menu.Item
               key={g.id}
-              title={`${g.name} — ${g.crop_type}`}
+              title={`${g.name} - ${g.crop_type}`}
               leadingIcon="sprout"
               onPress={() => { setSelectedGarden(g); setMenuVisible(false); }}
             />

@@ -55,7 +55,7 @@ def run():
         updated = 0
         created = 0
         for label, (plant_vi, disease_vi) in BUILTIN_VI_NAMES.items():
-            name_vi = f"{plant_vi} — {disease_vi}" if disease_vi else plant_vi
+            name_vi = f"{plant_vi} - {disease_vi}" if disease_vi else plant_vi
 
             # Find or create DiseaseClass for this label
             disease_class = db.query(DiseaseClass).filter(DiseaseClass.name == label).first()

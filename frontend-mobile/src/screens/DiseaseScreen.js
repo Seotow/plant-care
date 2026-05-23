@@ -35,7 +35,7 @@ function DiseaseCard({ disease, isAdmin, onDelete, onAddSamples, onEdit }) {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text variant="titleMedium" style={dcStyles.name} numberOfLines={1}>
               {disease.plant_name_vi
-                ? (disease.disease_name_vi ? `${disease.plant_name_vi} — ${disease.disease_name_vi}` : disease.plant_name_vi)
+                ? (disease.disease_name_vi ? `${disease.plant_name_vi} - ${disease.disease_name_vi}` : disease.plant_name_vi)
                 : (disease.name_vi || disease.name)}
             </Text>
             {disease.is_newly_approved && (
@@ -125,7 +125,7 @@ export default function DiseaseScreen({ navigation }) {
   const [editTreatment, setEditTreatment] = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
-  // User submit dialog (web — DiseaseSubmit is not in this stack)
+  // User submit dialog (web - DiseaseSubmit is not in this stack)
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [submitPlantNameVi, setSubmitPlantNameVi] = useState("");
   const [submitDiseaseNameVi, setSubmitDiseaseNameVi] = useState("");
@@ -199,7 +199,7 @@ export default function DiseaseScreen({ navigation }) {
       resetForm();
       setDialogOpen(false);
       fetchDiseases();
-      const label = diseaseNameVi.trim() ? `${plantNameVi.trim()} — ${diseaseNameVi.trim()}` : plantNameVi.trim();
+      const label = diseaseNameVi.trim() ? `${plantNameVi.trim()} - ${diseaseNameVi.trim()}` : plantNameVi.trim();
       Alert.alert("Đã thêm", `Đã thêm "${label}" vào Knowledge Base`);
     } catch (err) {
       Alert.alert("Lỗi", err.message || "Không thể thêm bệnh");
@@ -248,7 +248,7 @@ export default function DiseaseScreen({ navigation }) {
       await api.updateDisease(editDisease.id, editPlantNameVi.trim(), editDiseaseNameVi.trim(), editTreatment.trim());
       setEditDialogOpen(false);
       fetchDiseases();
-      const label = editDiseaseNameVi.trim() ? `${editPlantNameVi.trim()} — ${editDiseaseNameVi.trim()}` : editPlantNameVi.trim();
+      const label = editDiseaseNameVi.trim() ? `${editPlantNameVi.trim()} - ${editDiseaseNameVi.trim()}` : editPlantNameVi.trim();
       Alert.alert("Đã lưu", `Đã cập nhật "${label}"`);
     } catch (err) {
       Alert.alert("Lỗi", err.message || "Không thể cập nhật");
@@ -321,7 +321,7 @@ export default function DiseaseScreen({ navigation }) {
             <View style={[dcStyles.card, { marginBottom: 8 }]}>
               <Text variant="titleSmall" style={{ fontWeight: "700", color: colors.text }}>
                 {s.plant_name_vi || s.name}
-                {s.disease_name_vi ? ` — ${s.disease_name_vi}` : ""}
+                {s.disease_name_vi ? ` - ${s.disease_name_vi}` : ""}
               </Text>
               <Text variant="bodySmall" style={{ color: colors.textMuted, marginTop: 2 }}>
                 {new Date(s.created_at).toLocaleDateString("vi-VN")} · {s.sample_count} ảnh ·{" "}

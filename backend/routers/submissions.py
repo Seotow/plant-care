@@ -56,7 +56,7 @@ async def submit_disease(
     if dup:
         raise HTTPException(status_code=409, detail="Đã có đề xuất bệnh này đang chờ duyệt")
 
-    name_display = f"{pnv} — {dnv}" if dnv else pnv
+    name_display = f"{pnv} - {dnv}" if dnv else pnv
     submission = DiseaseSubmission(
         name=name_display[:100],
         name_vi=name_display,
